@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - RaffleManager</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #1a2035 0%, #2d3a5e 50%, #1a2035 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    .login-wrapper {
+      width: 100%;
+      max-width: 420px;
+      padding: 1rem;
+    }
+
+    .login-brand {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .login-brand .brand-icon {
+      width: 64px;
+      height: 64px;
+      background: #4f8ef7;
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      color: #fff;
+      margin-bottom: 1rem;
+      box-shadow: 0 8px 24px rgba(79, 142, 247, 0.4);
+    }
+
+    .login-brand h1 {
+      color: #ffffff;
+      font-size: 1.75rem;
+      font-weight: 800;
+      margin-bottom: 0.25rem;
+    }
+
+    .login-brand p {
+      color: rgba(255,255,255,0.5);
+      font-size: 0.9rem;
+    }
+
+    .login-card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .login-card h2 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #1a2035;
+      margin-bottom: 0.25rem;
+    }
+
+    .login-card .subtitle {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-floating label {
+      color: #94a3b8;
+      font-size: 0.9rem;
+    }
+
+    .form-floating .form-control {
+      border-radius: 10px;
+      border: 1.5px solid #e2e8f0;
+      padding-top: 1.6rem;
+    }
+
+    .form-floating .form-control:focus {
+      border-color: #4f8ef7;
+      box-shadow: 0 0 0 3px rgba(79, 142, 247, 0.15);
+    }
+
+    .btn-login {
+      background: linear-gradient(135deg, #4f8ef7, #2563eb);
+      border: none;
+      border-radius: 10px;
+      padding: 0.75rem;
+      font-size: 1rem;
+      font-weight: 600;
+      width: 100%;
+      color: #fff;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(79, 142, 247, 0.3);
+    }
+
+    .btn-login:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(79, 142, 247, 0.4);
+      background: linear-gradient(135deg, #3b7de8, #1d4ed8);
+      color: #fff;
+    }
+
+    .alert {
+      border-radius: 10px;
+      font-size: 0.875rem;
+      border: none;
+    }
+
+    .error-list {
+      background: #fef2f2;
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      border-left: 3px solid #ef4444;
+    }
+
+    .error-list p {
+      color: #dc2626;
+      font-size: 0.875rem;
+      margin: 0;
+    }
+
+    .login-footer {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.35);
+    }
+  </style>
+</head>
+<body>
+  <div class="login-wrapper">
+    <div class="login-brand">
+      <div class="brand-icon">
+        <i class="bi bi-ticket-perforated-fill"></i>
+      </div>
+      <h1>RaffleManager</h1>
+      <p>Campaign Management Platform</p>
+    </div>
+
+    <div class="login-card">
+      <h2>Welcome back</h2>
+      <p class="subtitle">Sign in to manage your campaigns</p>
+
+      {% if form.errors %}
+        <div class="error-list">
+          <p><i class="bi bi-exclamation-circle-fill me-1"></i>
+            Invalid username or password. Please try again.
+          </p>
+        </div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <div class="form-floating">
+            <input
+              type="text"
+              name="username"
+              id="id_username"
+              class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+              placeholder="Username"
+              autocomplete="username"
+              autofocus
+              value="{{ form.username.value|default:'' }}"
+            >
+            <label for="id_username"><i class="bi bi-person me-1"></i>Username</label>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <div class="form-floating">
+            <input
+              type="password"
+              name="password"
+              id="id_password"
+              class="form-control {% if form.password.errors %}is-invalid{% endif %}"
+              placeholder="Password"
+              autocomplete="current-password"
+            >
+            <label for="id_password"><i class="bi bi-lock me-1"></i>Password</label>
+          </div>
+        </div>
+
+        {% if next %}
+          <input type="hidden" name="next" value="{{ next }}">
+        {% endif %}
+
+        <button type="submit" class="btn btn-login">
+          <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+        </button>
+      </form>
+    </div>
+
+    <div class="login-footer">
+      &copy; RaffleManager &mdash; Secure Admin Access
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

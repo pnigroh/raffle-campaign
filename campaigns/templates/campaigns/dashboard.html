@@ -1,0 +1,210 @@
+{% extends "campaigns/base.html" %}
+
+{% block title %}Dashboard - RaffleManager{% endblock %}
+{% block topbar_title %}Dashboard Overview{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-speedometer2 me-2 text-primary"></i>Dashboard</h1>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item active">Home</li>
+    </ol>
+  </nav>
+</div>
+
+<!-- Stats Row -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-4">
+    <div class="stat-card blue">
+      <div class="stat-icon" style="background:rgba(255,255,255,0.2);">
+        <i class="bi bi-megaphone-fill text-white"></i>
+      </div>
+      <div class="stat-value">{{ total_campaigns }}</div>
+      <div class="stat-label">Total Campaigns</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-4">
+    <div class="stat-card green">
+      <div class="stat-icon" style="background:rgba(255,255,255,0.2);">
+        <i class="bi bi-play-circle-fill text-white"></i>
+      </div>
+      <div class="stat-value">{{ active_campaigns.count }}</div>
+      <div class="stat-label">Active Campaigns</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-4">
+    <div class="stat-card purple">
+      <div class="stat-icon" style="background:rgba(255,255,255,0.2);">
+        <i class="bi bi-people-fill text-white"></i>
+      </div>
+      <div class="stat-value">{{ total_submissions }}</div>
+      <div class="stat-label">Total Submissions</div>
+    </div>
+  </div>
+</div>
+
+<!-- Active Campaigns -->
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <span><i class="bi bi-play-circle me-2 text-success"></i>Active Campaigns</span>
+    <a href="/admin/campaigns/campaign/add/" class="btn btn-sm btn-primary">
+      <i class="bi bi-plus-lg me-1"></i>New Campaign
+    </a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>Campaign</th>
+          <th>Submissions</th>
+          <th>Codes</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for campaign in active_campaigns %}
+        <tr>
+          <td>
+            <div class="fw-semibold text-dark">{{ campaign.name }}</div>
+            <div class="text-muted-sm">/submit/{{ campaign.slug }}/</div>
+          </td>
+          <td>
+            <span class="fw-semibold">{{ campaign.submission_count }}</span>
+          </td>
+          <td>
+            {% with avail=campaign.unused_codes_count %}
+              {% if campaign.validate_submission_code %}
+                <span class="fw-semibold text-success">{{ avail }}</span>
+                <span class="text-muted-sm"> available</span>
+              {% else %}
+                <span class="text-muted-sm">Not required</span>
+              {% endif %}
+            {% endwith %}
+          </td>
+          <td>
+            <span class="text-muted-sm">{{ campaign.start_date|date:"M d, Y" }}</span>
+          </td>
+          <td>
+            <span class="text-muted-sm">{{ campaign.end_date|date:"M d, Y" }}</span>
+          </td>
+          <td>
+            <span class="badge-status-active">Active</span>
+          </td>
+          <td>
+            <div class="d-flex gap-1 flex-wrap">
+              <a href="{% url 'campaign_detail' campaign.id %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-eye me-1"></i>View
+              </a>
+              <a href="{% url 'raffle' campaign.id %}" class="btn btn-sm btn-outline-warning">
+                <i class="bi bi-stars me-1"></i>Raffle
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center py-4 text-muted">
+            <i class="bi bi-megaphone fs-2 d-block mb-2 opacity-25"></i>
+            No active campaigns. <a href="/admin/campaigns/campaign/add/">Create one</a>.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Inactive Campaigns -->
+{% if inactive_campaigns %}
+<div class="card mb-4">
+  <div class="card-header">
+    <i class="bi bi-pause-circle me-2 text-secondary"></i>Inactive Campaigns
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>Campaign</th>
+          <th>Submissions</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for campaign in inactive_campaigns %}
+        <tr>
+          <td>
+            <div class="fw-semibold text-dark">{{ campaign.name }}</div>
+            <div class="text-muted-sm">{{ campaign.slug }}</div>
+          </td>
+          <td>{{ campaign.submission_count }}</td>
+          <td><span class="text-muted-sm">{{ campaign.start_date|date:"M d, Y" }}</span></td>
+          <td><span class="text-muted-sm">{{ campaign.end_date|date:"M d, Y" }}</span></td>
+          <td><span class="badge-status-inactive">Inactive</span></td>
+          <td>
+            <a href="{% url 'campaign_detail' campaign.id %}" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-eye me-1"></i>View
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Recent Submissions -->
+<div class="card">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <span><i class="bi bi-clock-history me-2 text-primary"></i>Recent Submissions</span>
+    <span class="badge bg-primary rounded-pill">{{ recent_submissions|length }} shown</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Campaign</th>
+          <th>State</th>
+          <th>County</th>
+          <th>Submitted</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for submission in recent_submissions %}
+        <tr>
+          <td class="fw-semibold">{{ submission.full_name }}</td>
+          <td>{{ submission.email }}</td>
+          <td>
+            <a href="{% url 'campaign_detail' submission.campaign.id %}" class="text-decoration-none text-primary fw-semibold">
+              {{ submission.campaign.name }}
+            </a>
+          </td>
+          <td><span class="badge bg-light text-dark border">{{ submission.state }}</span></td>
+          <td>{{ submission.county }}</td>
+          <td>
+            <span class="text-muted-sm">{{ submission.submitted_at|date:"M d, Y H:i" }}</span>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center py-4 text-muted">
+            <i class="bi bi-inbox fs-2 d-block mb-2 opacity-25"></i>
+            No submissions yet.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

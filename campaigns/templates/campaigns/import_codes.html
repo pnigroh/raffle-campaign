@@ -1,0 +1,280 @@
+{% extends "campaigns/base.html" %}
+
+{% block title %}Import Codes - {{ campaign.name }}{% endblock %}
+{% block topbar_title %}Import Submission Codes{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+    <div>
+      <h1><i class="bi bi-upload me-2 text-primary"></i>Import Submission Codes</h1>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'campaign_detail' campaign.id %}">{{ campaign.name }}</a></li>
+          <li class="breadcrumb-item active">Import Codes</li>
+        </ol>
+      </nav>
+    </div>
+    <a href="{% url 'campaign_detail' campaign.id %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Back to Campaign
+    </a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Upload Form -->
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-file-earmark-arrow-up me-2 text-primary"></i>Upload CSV File
+      </div>
+      <div class="card-body">
+
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show d-flex align-items-center gap-2 mb-3">
+              {% if message.tags == 'success' %}<i class="bi bi-check-circle-fill text-success"></i>
+              {% elif message.tags == 'error' %}<i class="bi bi-exclamation-triangle-fill text-danger"></i>
+              {% else %}<i class="bi bi-info-circle-fill text-primary"></i>{% endif %}
+              {{ message }}
+              <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+
+          <div class="mb-4">
+            <label class="form-label" for="id_csv_file">CSV File</label>
+            <div
+              class="upload-zone"
+              id="uploadZone"
+              onclick="document.getElementById('id_csv_file').click()"
+            >
+              <div class="upload-icon">
+                <i class="bi bi-cloud-arrow-up-fill"></i>
+              </div>
+              <div class="upload-text">Click to choose file or drag &amp; drop</div>
+              <div class="upload-subtext">CSV files only &bull; UTF-8 or UTF-8 BOM encoded</div>
+              <div id="fileName" class="upload-filename"></div>
+            </div>
+            <input
+              type="file"
+              name="csv_file"
+              id="id_csv_file"
+              accept=".csv,text/csv"
+              class="d-none {% if form.csv_file.errors %}is-invalid{% endif %}"
+              required
+            >
+            {% if form.csv_file.errors %}
+              <div class="text-danger mt-1" style="font-size:0.85rem;">{{ form.csv_file.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-4">
+            <div class="form-check">
+              <input
+                type="checkbox"
+                name="skip_duplicates"
+                id="id_skip_duplicates"
+                class="form-check-input"
+                checked
+              >
+              <label class="form-check-label" for="id_skip_duplicates">
+                Skip duplicate codes
+                <span class="text-muted" style="font-size:0.82rem;">(recommended)</span>
+              </label>
+              <div class="text-muted mt-1" style="font-size:0.8rem;">
+                If unchecked, importing a duplicate code will cause an error for that row.
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-upload me-1"></i>Import Codes
+            </button>
+            <a href="{% url 'campaign_detail' campaign.id %}" class="btn btn-outline-secondary">
+              Cancel
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Instructions -->
+  <div class="col-lg-5">
+    <div class="card mb-3">
+      <div class="card-header">
+        <i class="bi bi-question-circle me-2 text-primary"></i>CSV Format Instructions
+      </div>
+      <div class="card-body" style="font-size:0.875rem;">
+        <p class="text-muted mb-3">Your CSV file can be in any of the following formats:</p>
+
+        <div class="mb-3">
+          <div class="fw-semibold mb-2">
+            <span class="badge bg-primary me-1">Option 1</span>
+            Single column with header
+          </div>
+          <pre class="bg-light border rounded p-3 mb-0" style="font-size:0.8rem;">code
+ABC123
+DEF456
+GHI789</pre>
+        </div>
+
+        <div class="mb-3">
+          <div class="fw-semibold mb-2">
+            <span class="badge bg-success me-1">Option 2</span>
+            Single column, no header
+          </div>
+          <pre class="bg-light border rounded p-3 mb-0" style="font-size:0.8rem;">ABC123
+DEF456
+GHI789</pre>
+        </div>
+
+        <div class="mb-3">
+          <div class="fw-semibold mb-2">
+            <span class="badge bg-info text-dark me-1">Option 3</span>
+            Multiple columns (first used)
+          </div>
+          <pre class="bg-light border rounded p-3 mb-0" style="font-size:0.8rem;">code,description,batch
+ABC123,Prize Code,Batch1
+DEF456,Prize Code,Batch1</pre>
+        </div>
+
+        <div class="alert alert-info d-flex gap-2 p-3 mb-0" style="font-size:0.82rem;">
+          <i class="bi bi-lightbulb-fill flex-shrink-0 mt-1"></i>
+          <div>
+            <strong>Tips:</strong>
+            <ul class="mb-0 ps-3 mt-1">
+              <li>Remove any leading/trailing spaces from codes</li>
+              <li>Codes are case-sensitive</li>
+              <li>Maximum code length is 100 characters</li>
+              <li>Save your file as UTF-8 encoded CSV</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-bar-chart me-2 text-primary"></i>Current Code Stats
+      </div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-muted" style="font-size:0.875rem;">Campaign</span>
+          <span class="fw-semibold">{{ campaign.name }}</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-muted" style="font-size:0.875rem;">Code Validation</span>
+          <span class="badge {% if campaign.validate_submission_code %}bg-success{% else %}bg-secondary{% endif %}">
+            {% if campaign.validate_submission_code %}Required{% else %}Optional{% endif %}
+          </span>
+        </div>
+        <hr class="my-2">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-muted" style="font-size:0.875rem;">Total Codes</span>
+          <span class="fw-bold">{{ campaign.submission_codes.count }}</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-muted" style="font-size:0.875rem;">Used Codes</span>
+          <span class="fw-bold text-warning">{{ campaign.submission_codes.filter.is_used|default:"0" }}</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="text-muted" style="font-size:0.875rem;">Available Codes</span>
+          <span class="fw-bold text-success">{{ campaign.unused_codes_count }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .upload-zone {
+    border: 2px dashed #cbd5e1;
+    border-radius: 14px;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #fafbff;
+  }
+
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: #4f8ef7;
+    background: #eff6ff;
+  }
+
+  .upload-icon {
+    font-size: 2.5rem;
+    color: #94a3b8;
+    margin-bottom: 0.75rem;
+    transition: color 0.2s;
+  }
+
+  .upload-zone:hover .upload-icon {
+    color: #4f8ef7;
+  }
+
+  .upload-text {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.25rem;
+  }
+
+  .upload-subtext {
+    font-size: 0.8rem;
+    color: #94a3b8;
+  }
+
+  .upload-filename {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: #4f8ef7;
+    font-weight: 600;
+  }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const fileInput = document.getElementById('id_csv_file');
+  const uploadZone = document.getElementById('uploadZone');
+  const fileNameDisplay = document.getElementById('fileName');
+
+  fileInput.addEventListener('change', function() {
+    if (this.files.length > 0) {
+      fileNameDisplay.textContent = '✓ ' + this.files[0].name;
+      uploadZone.style.borderColor = '#4f8ef7';
+      uploadZone.style.background = '#eff6ff';
+    }
+  });
+
+  // Drag and drop
+  uploadZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadZone.classList.add('dragover');
+  });
+
+  uploadZone.addEventListener('dragleave', () => {
+    uploadZone.classList.remove('dragover');
+  });
+
+  uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      fileInput.files = files;
+      fileNameDisplay.textContent = '✓ ' + files[0].name;
+      uploadZone.style.borderColor = '#4f8ef7';
+      uploadZone.style.background = '#eff6ff';
+    }
+  });
+</script>
+{% endblock %}

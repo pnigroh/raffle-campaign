@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Raffle Campaign Manager — Documentation</title>
+  <style>
+    :root {
+      --primary: #7c3aed;
+      --primary-light: #ede9fe;
+      --primary-dark: #5b21b6;
+      --sidebar-bg: #0f172a;
+      --sidebar-text: #cbd5e1;
+      --sidebar-active: #7c3aed;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --border: #e2e8f0;
+      --code-bg: #1e293b;
+      --code-text: #e2e8f0;
+      --success: #059669;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --info: #0891b2;
+      --sidebar-width: 260px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: var(--sidebar-width);
+      background: var(--sidebar-bg);
+      color: var(--sidebar-text);
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+    }
+
+    #sidebar-header {
+      padding: 24px 20px 16px;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    #sidebar-header .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    #sidebar-header .logo-icon {
+      width: 36px; height: 36px;
+      background: var(--primary);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+
+    #sidebar-header .logo-text {
+      font-size: 15px;
+      font-weight: 700;
+      color: #f1f5f9;
+      line-height: 1.2;
+    }
+
+    #sidebar-header .logo-sub {
+      font-size: 11px;
+      color: var(--sidebar-text);
+      font-weight: 400;
+    }
+
+    nav ul { list-style: none; padding: 12px 0; }
+    nav ul li a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 20px;
+      color: var(--sidebar-text);
+      text-decoration: none;
+      font-size: 13.5px;
+      border-left: 3px solid transparent;
+      transition: all 0.15s;
+    }
+    nav ul li a:hover,
+    nav ul li a.active {
+      background: rgba(124,58,237,0.12);
+      color: #c4b5fd;
+      border-left-color: var(--primary);
+    }
+    nav ul li a .nav-icon { font-size: 16px; opacity: 0.8; }
+
+    .nav-section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: #475569;
+      padding: 16px 20px 4px;
+    }
+
+    /* ── Main Content ── */
+    #main {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+      max-width: calc(100% - var(--sidebar-width));
+    }
+
+    #topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 40px;
+      position: sticky; top: 0; z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    #topbar h1 { font-size: 20px; font-weight: 700; color: var(--text); }
+    #topbar .badge {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    #content { padding: 40px; max-width: 900px; }
+
+    /* ── Typography ── */
+    h2 {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--primary-light);
+      scroll-margin-top: 80px;
+    }
+
+    h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 28px 0 10px;
+      scroll-margin-top: 80px;
+    }
+
+    h4 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--primary-dark);
+      margin: 20px 0 8px;
+    }
+
+    p { margin-bottom: 14px; color: var(--text); }
+
+    section { margin-bottom: 56px; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      border-top: 3px solid var(--primary);
+    }
+
+    .feature-card .icon {
+      font-size: 28px;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .feature-card h4 { margin: 0 0 6px; color: var(--text); }
+    .feature-card p { font-size: 13.5px; color: var(--text-muted); margin: 0; }
+
+    /* ── Tables ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin-bottom: 20px;
+      background: var(--surface);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    thead { background: var(--primary); color: white; }
+    thead th { padding: 11px 16px; text-align: left; font-weight: 600; font-size: 13px; }
+    tbody tr { border-bottom: 1px solid var(--border); }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #faf5ff; }
+    tbody td { padding: 10px 16px; vertical-align: top; }
+    td code { background: var(--primary-light); color: var(--primary-dark); padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+
+    /* ── Code Blocks ── */
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 20px 24px;
+      border-radius: 10px;
+      overflow-x: auto;
+      font-size: 13.5px;
+      line-height: 1.7;
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    pre .label {
+      position: absolute;
+      top: 10px; right: 14px;
+      font-size: 11px;
+      color: #64748b;
+      font-family: sans-serif;
+      letter-spacing: 0.5px;
+    }
+
+    code { font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; }
+    p code, li code {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    /* ── Alerts / Callouts ── */
+    .callout {
+      padding: 14px 18px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .callout .callout-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .callout.info    { background: #e0f2fe; border-left: 4px solid var(--info); }
+    .callout.warning { background: #fef3c7; border-left: 4px solid var(--warning); }
+    .callout.danger  { background: #fee2e2; border-left: 4px solid var(--danger); }
+    .callout.success { background: #d1fae5; border-left: 4px solid var(--success); }
+
+    /* ── Lists ── */
+    ul.styled, ol.styled {
+      padding-left: 22px;
+      margin-bottom: 14px;
+    }
+    ul.styled li, ol.styled li {
+      margin-bottom: 6px;
+      font-size: 14.5px;
+    }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-public  { background: #d1fae5; color: #065f46; }
+    .badge-staff   { background: #dbeafe; color: #1e40af; }
+    .badge-get     { background: #d1fae5; color: #065f46; }
+    .badge-post    { background: #fef3c7; color: #92400e; }
+
+    /* ── Schema Diagram ── */
+    .schema {
+      background: var(--code-bg);
+      color: #94a3b8;
+      border-radius: 10px;
+      padding: 24px 28px;
+      font-family: monospace;
+      font-size: 13px;
+      line-height: 1.8;
+      margin-bottom: 16px;
+    }
+    .schema .model  { color: #c4b5fd; font-weight: bold; }
+    .schema .field  { color: #7dd3fc; }
+    .schema .fk     { color: #86efac; }
+    .schema .arrow  { color: #f472b6; }
+
+    /* ── Checklist ── */
+    .checklist { list-style: none; padding: 0; margin-bottom: 16px; }
+    .checklist li {
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .checklist li:last-child { border-bottom: none; }
+    .checklist li::before {
+      content: '☐';
+      font-size: 16px;
+      color: var(--text-muted);
+    }
+
+    /* ── URL Table ── */
+    .url-method {
+      font-family: monospace;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 60px;
+      padding: 24px 0;
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 768px) {
+      #sidebar { display: none; }
+      #main { margin-left: 0; max-width: 100%; }
+      #content { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════ SIDEBAR ══ -->
+<aside id="sidebar">
+  <div id="sidebar-header">
+    <a href="#top" class="logo">
+      <div class="logo-icon">🎰</div>
+      <div>
+        <div class="logo-text">Raffle Manager</div>
+        <div class="logo-sub">Documentation</div>
+      </div>
+    </a>
+  </div>
+
+  <nav>
+    <div class="nav-section-label">Getting Started</div>
+    <ul>
+      <li><a href="#overview" class="active"><span class="nav-icon">📋</span> Overview</a></li>
+      <li><a href="#features"><span class="nav-icon">✨</span> Features</a></li>
+      <li><a href="#installation"><span class="nav-icon">⚙️</span> Installation</a></li>
+    </ul>
+
+    <div class="nav-section-label">Data Model</div>
+    <ul>
+      <li><a href="#models-overview"><span class="nav-icon">🗂️</span> Schema Overview</a></li>
+      <li><a href="#model-campaign"><span class="nav-icon">📣</span> Campaign</a></li>
+      <li><a href="#model-prize"><span class="nav-icon">🏆</span> Prize</a></li>
+      <li><a href="#model-code"><span class="nav-icon">🎫</span> Submission Code</a></li>
+      <li><a href="#model-submission"><span class="nav-icon">📝</span> Submission</a></li>
+      <li><a href="#model-raffle"><span class="nav-icon">🎲</span> Raffle</a></li>
+      <li><a href="#model-winner"><span class="nav-icon">🥇</span> Raffle Winner</a></li>
+    </ul>
+
+    <div class="nav-section-label">Usage</div>
+    <ul>
+      <li><a href="#urls"><span class="nav-icon">🔗</span> URL Reference</a></li>
+      <li><a href="#public-form"><span class="nav-icon">🌐</span> Public Form</a></li>
+      <li><a href="#dashboard"><span class="nav-icon">📊</span> Dashboard</a></li>
+      <li><a href="#importing-codes"><span class="nav-icon">📥</span> Importing Codes</a></li>
+      <li><a href="#running-raffle"><span class="nav-icon">🎰</span> Running a Raffle</a></li>
+      <li><a href="#exporting"><span class="nav-icon">📤</span> Exporting Data</a></li>
+    </ul>
+
+    <div class="nav-section-label">Reference</div>
+    <ul>
+      <li><a href="#admin"><span class="nav-icon">🛠️</span> Django Admin (Unfold)</a></li>
+      <li><a href="#production"><span class="nav-icon">🚀</span> Production Checklist</a></li>
+    </ul>
+  </nav>
+</aside>
+
+<!-- ══════════════════════════════════════════════ MAIN ══ -->
+<div id="main">
+  <div id="topbar">
+    <h1>🎰 Raffle Campaign Manager</h1>
+    <span class="badge">Django 4.2 · Unfold Admin</span>
+  </div>
+
+  <div id="content">
+
+    <!-- ─── OVERVIEW ─── -->
+    <section id="overview">
+      <h2>Overview</h2>
+      <p>
+        Raffle Campaign Manager is a Django application for running promotional campaigns and prize raffles.
+        Staff create campaigns, attach prizes and submission codes, then share a public URL with participants.
+        Once entries are collected, staff run a segmented raffle from the dashboard and export the winners.
+      </p>
+      <div class="callout success">
+        <span class="callout-icon">✅</span>
+        <div><strong>Default credentials (development):</strong> username <code>admin</code> · password <code>admin123</code></div>
+      </div>
+      <div class="callout warning">
+        <span class="callout-icon">⚠️</span>
+        <div>Change the default password before exposing the app to any network.</div>
+      </div>
+    </section>
+
+    <!-- ─── FEATURES ─── -->
+    <section id="features">
+      <h2>Features</h2>
+      <div class="card-grid">
+        <div class="feature-card">
+          <span class="icon">📣</span>
+          <h4>Campaign Management</h4>
+          <p>Create campaigns with date ranges, active toggle, and configurable code validation.</p>
+        </div>
+        <div class="feature-card">
+          <span class="icon">🎫</span>
+          <h4>Submission Codes</h4>
+          <p>Bulk-import codes via CSV. Optionally require a valid code before saving a submission.</p>
+        </div>
+        <div class="feature-card">
+          <span class="icon">🌐</span>
+          <h4>Public Form</h4>
+          <p>Clean participant form — name, state, county, phone, email, and optional code field.</p>
+        </div>
+        <div class="feature-card">
+          <span class="icon">📊</span>
+          <h4>Dashboard</h4>
+          <p>Live overview of active campaigns, submission counts, and recent activity.</p>
+        </div>
+        <div class="feature-card">
+          <span class="icon">🎰</span>
+          <h4>Segmented Raffles</h4>
+          <p>Filter the pool by state, county, and date range. Live AJAX participant counter.</p>
+        </div>
+        <div class="feature-card">
+          <span class="icon">🏆</span>
+          <h4>Multi-Prize Draws</h4>
+          <p>Set winner quantities per prize in one draw. No duplicate winners across prizes.</p>
+        </div>
+        <div class="feature-card">
+          <span class="icon">📤</span>
+          <h4>CSV Export</h4>
+          <p>Export all submissions or raffle winners at any time.</p>
+        </div>
+        <div class="feature-card">
+          <span class="icon">🛠️</span>
+          <h4>Unfold Admin</h4>
+          <p>Modern, beautiful admin UI with a custom navigation sidebar and purple theme.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── INSTALLATION ─── -->
+    <section id="installation">
+      <h2>Installation</h2>
+
+      <h3>Requirements</h3>
+      <ul class="styled">
+        <li>Python 3.10+</li>
+        <li>pip</li>
+        <li>virtualenv (recommended)</li>
+      </ul>
+
+      <h3>Step-by-step</h3>
+
+      <h4>1 · Create & activate a virtual environment</h4>
+      <pre><code>python3 -m venv venv
+source venv/bin/activate       # macOS / Linux
+venv\Scripts\activate          # Windows</code></pre>
+
+      <h4>2 · Install dependencies</h4>
+      <pre><code>pip install -r requirements.txt</code></pre>
+
+      <h4>3 · Apply database migrations</h4>
+      <pre><code>python3 manage.py migrate</code></pre>
+
+      <h4>4 · Create a superuser</h4>
+      <pre><code># Quick dev superuser (admin / admin123)
+python3 manage.py create_superuser_default
+
+# Or interactively
+python3 manage.py createsuperuser</code></pre>
+
+      <h4>5 · Start the development server</h4>
+      <pre><code>python3 manage.py runserver</code></pre>
+
+      <p>Then visit <code>http://127.0.0.1:8000/dashboard/</code> and log in.</p>
+
+      <h3>Dependencies</h3>
+      <table>
+        <thead><tr><th>Package</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>Django>=4.2</code></td><td>Web framework</td></tr>
+          <tr><td><code>django-unfold</code></td><td>Modern admin UI theme</td></tr>
+          <tr><td><code>django-crispy-forms</code></td><td>Form rendering helpers</td></tr>
+          <tr><td><code>crispy-bootstrap5</code></td><td>Bootstrap 5 crispy pack</td></tr>
+          <tr><td><code>python-dotenv</code></td><td>Load <code>.env</code> files</td></tr>
+          <tr><td><code>Pillow</code></td><td>Image handling (future use)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ─── MODELS OVERVIEW ─── -->
+    <section id="models-overview">
+      <h2>Schema Overview</h2>
+      <div class="schema">
+<span class="model">Campaign</span>
+├── <span class="fk">Prize</span>             (FK → Campaign)
+├── <span class="fk">SubmissionCode</span>    (FK → Campaign)
+├── <span class="fk">Submission</span>        (FK → Campaign)
+│   └── <span class="fk">submission_code</span>  (OneToOne → SubmissionCode, optional)
+└── <span class="fk">Raffle</span>            (FK → Campaign)
+    └── <span class="fk">RaffleWinner</span>   (FK → Raffle)
+        ├── <span class="arrow">→</span> <span class="field">Submission</span>
+        └── <span class="arrow">→</span> <span class="field">Prize</span>
+      </div>
+      <p>
+        A <strong>Campaign</strong> is the root entity. Everything else belongs to it.
+        A <strong>Submission</strong> is one participant entry. A <strong>Raffle</strong> is a draw event that produces
+        <strong>RaffleWinner</strong> records linking submissions to prizes.
+      </p>
+    </section>
+
+    <!-- ─── MODEL: CAMPAIGN ─── -->
+    <section id="model-campaign">
+      <h2>Model: Campaign</h2>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>name</code></td><td>CharField(200)</td><td>Display name of the campaign</td></tr>
+          <tr><td><code>slug</code></td><td>SlugField (unique)</td><td>URL-safe identifier — auto-generated from name</td></tr>
+          <tr><td><code>description</code></td><td>TextField</td><td>Optional text shown on the public form</td></tr>
+          <tr><td><code>start_date</code></td><td>DateTimeField</td><td>When submissions open</td></tr>
+          <tr><td><code>end_date</code></td><td>DateTimeField</td><td>When submissions close</td></tr>
+          <tr><td><code>is_active</code></td><td>BooleanField</td><td>Master on/off switch for the campaign</td></tr>
+          <tr><td><code>validate_submission_code</code></td><td>BooleanField</td><td>If <code>True</code>, a valid unused code is required before saving</td></tr>
+          <tr><td><code>allow_multiple_submissions</code></td><td>BooleanField</td><td>If <code>False</code>, the same email can only submit once</td></tr>
+          <tr><td><code>created_at</code></td><td>DateTimeField (auto)</td><td>Creation timestamp</td></tr>
+          <tr><td><code>updated_at</code></td><td>DateTimeField (auto)</td><td>Last modification timestamp</td></tr>
+        </tbody>
+      </table>
+      <div class="callout info">
+        <span class="callout-icon">💡</span>
+        <div>
+          <strong>validate_submission_code</strong> controls the core mechanic:
+          when <code>True</code>, the participant must enter a code that exists in <code>SubmissionCode</code> and has <code>is_used=False</code>.
+          Once used, the code is marked as used and cannot be reused.
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── MODEL: PRIZE ─── -->
+    <section id="model-prize">
+      <h2>Model: Prize</h2>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>campaign</code></td><td>FK → Campaign</td><td>The campaign this prize belongs to</td></tr>
+          <tr><td><code>name</code></td><td>CharField(200)</td><td>Prize display name (e.g. "Grand Prize — Trip to Paris")</td></tr>
+          <tr><td><code>description</code></td><td>TextField</td><td>Optional details about the prize</td></tr>
+          <tr><td><code>quantity</code></td><td>PositiveIntegerField</td><td>How many of this prize will be awarded in a single draw</td></tr>
+          <tr><td><code>order</code></td><td>PositiveIntegerField</td><td>Display and draw order (lower = first)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ─── MODEL: SUBMISSIONCODE ─── -->
+    <section id="model-code">
+      <h2>Model: SubmissionCode</h2>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>campaign</code></td><td>FK → Campaign</td><td>Codes are scoped per campaign</td></tr>
+          <tr><td><code>code</code></td><td>CharField(100)</td><td>The code string — unique per campaign</td></tr>
+          <tr><td><code>is_used</code></td><td>BooleanField</td><td>Set to <code>True</code> once a submission is saved with this code</td></tr>
+          <tr><td><code>used_at</code></td><td>DateTimeField (nullable)</td><td>Timestamp of when the code was consumed</td></tr>
+        </tbody>
+      </table>
+      <p>Codes are bulk-imported via CSV from the campaign detail page. See <a href="#importing-codes">Importing Codes</a>.</p>
+    </section>
+
+    <!-- ─── MODEL: SUBMISSION ─── -->
+    <section id="model-submission">
+      <h2>Model: Submission</h2>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>campaign</code></td><td>FK → Campaign</td><td>Parent campaign</td></tr>
+          <tr><td><code>submission_code</code></td><td>OneToOne → SubmissionCode (nullable)</td><td>The code used, if any</td></tr>
+          <tr><td><code>first_name</code></td><td>CharField(100)</td><td>Participant first name</td></tr>
+          <tr><td><code>last_name</code></td><td>CharField(100)</td><td>Participant last name</td></tr>
+          <tr><td><code>state</code></td><td>CharField(100)</td><td>US state abbreviation (e.g. <code>FL</code>)</td></tr>
+          <tr><td><code>county</code></td><td>CharField(100)</td><td>County name</td></tr>
+          <tr><td><code>phone</code></td><td>CharField(20)</td><td>Phone number</td></tr>
+          <tr><td><code>email</code></td><td>EmailField</td><td>Email address</td></tr>
+          <tr><td><code>submitted_at</code></td><td>DateTimeField (auto)</td><td>Submission timestamp</td></tr>
+          <tr><td><code>ip_address</code></td><td>GenericIPAddressField (nullable)</td><td>Captured from the request</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ─── MODEL: RAFFLE ─── -->
+    <section id="model-raffle">
+      <h2>Model: Raffle</h2>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>campaign</code></td><td>FK → Campaign</td><td>The campaign this raffle belongs to</td></tr>
+          <tr><td><code>conducted_at</code></td><td>DateTimeField (auto)</td><td>When the draw was run</td></tr>
+          <tr><td><code>conducted_by</code></td><td>FK → User (nullable)</td><td>Staff user who triggered the draw</td></tr>
+          <tr><td><code>notes</code></td><td>TextField</td><td>Optional internal notes</td></tr>
+          <tr><td><code>segment_state</code></td><td>CharField</td><td>State filter that was applied (recorded for audit)</td></tr>
+          <tr><td><code>segment_county</code></td><td>CharField</td><td>County filter applied</td></tr>
+          <tr><td><code>segment_date_from/to</code></td><td>DateField (nullable)</td><td>Date range filter applied</td></tr>
+          <tr><td><code>total_participants</code></td><td>PositiveIntegerField</td><td>Pool size at draw time (snapshot)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ─── MODEL: RAFFLEWINNER ─── -->
+    <section id="model-winner">
+      <h2>Model: RaffleWinner</h2>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>raffle</code></td><td>FK → Raffle</td><td>Parent raffle draw</td></tr>
+          <tr><td><code>submission</code></td><td>FK → Submission</td><td>The winning participant</td></tr>
+          <tr><td><code>prize</code></td><td>FK → Prize</td><td>What they won</td></tr>
+          <tr><td><code>position</code></td><td>PositiveIntegerField</td><td>1st, 2nd, 3rd… within that prize tier</td></tr>
+        </tbody>
+      </table>
+      <div class="callout info">
+        <span class="callout-icon">💡</span>
+        <div>A submission can only win once per raffle — <code>unique_together = ['raffle', 'submission']</code> is enforced at the database level.</div>
+      </div>
+    </section>
+
+    <!-- ─── URL REFERENCE ─── -->
+    <section id="urls">
+      <h2>URL Reference</h2>
+      <table>
+        <thead><tr><th>URL</th><th>Access</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>/submit/&lt;slug&gt;/</code></td>
+            <td><span class="badge badge-public">Public</span></td>
+            <td>Participant submission form</td>
+          </tr>
+          <tr>
+            <td><code>/submit/&lt;slug&gt;/success/</code></td>
+            <td><span class="badge badge-public">Public</span></td>
+            <td>Post-submission thank-you page</td>
+          </tr>
+          <tr>
+            <td><code>/dashboard/login/</code></td>
+            <td><span class="badge badge-public">Public</span></td>
+            <td>Staff login page</td>
+          </tr>
+          <tr>
+            <td><code>/dashboard/</code></td>
+            <td><span class="badge badge-staff">Staff</span></td>
+            <td>Campaign overview dashboard</td>
+          </tr>
+          <tr>
+            <td><code>/dashboard/campaign/&lt;id&gt;/</code></td>
+            <td><span class="badge badge-staff">Staff</span></td>
+            <td>Campaign detail — submissions, codes, raffles</td>
+          </tr>
+          <tr>
+            <td><code>/dashboard/campaign/&lt;id&gt;/raffle/</code></td>
+            <td><span class="badge badge-staff">Staff</span></td>
+            <td>Raffle configuration and draw</td>
+          </tr>
+          <tr>
+            <td><code>/dashboard/campaign/&lt;id&gt;/import-codes/</code></td>
+            <td><span class="badge badge-staff">Staff</span></td>
+            <td>CSV submission code import</td>
+          </tr>
+          <tr>
+            <td><code>/dashboard/campaign/&lt;id&gt;/export/</code></td>
+            <td><span class="badge badge-staff">Staff</span></td>
+            <td>Download submissions CSV</td>
+          </tr>
+          <tr>
+            <td><code>/dashboard/campaign/&lt;id&gt;/filter-count/</code></td>
+            <td><span class="badge badge-staff">Staff</span></td>
+            <td>AJAX endpoint — returns participant count for given filters</td>
+          </tr>
+          <tr>
+            <td><code>/dashboard/raffle/&lt;id&gt;/results/</code></td>
+            <td><span class="badge badge-staff">Staff</span></td>
+            <td>View raffle winners</td>
+          </tr>
+          <tr>
+            <td><code>/dashboard/raffle/&lt;id&gt;/export/</code></td>
+            <td><span class="badge badge-staff">Staff</span></td>
+            <td>Download winners CSV</td>
+          </tr>
+          <tr>
+            <td><code>/admin/</code></td>
+            <td><span class="badge badge-staff">Staff</span></td>
+            <td>Django Unfold admin panel</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ─── PUBLIC FORM ─── -->
+    <section id="public-form">
+      <h2>Public Submission Form</h2>
+      <p>
+        Share <code>http://yourdomain.com/submit/&lt;campaign-slug&gt;/</code> with participants.
+        The form collects:
+      </p>
+      <ul class="styled">
+        <li><strong>First Name</strong></li>
+        <li><strong>Last Name</strong></li>
+        <li><strong>Submission Code</strong> — required if <code>validate_submission_code</code> is enabled, otherwise optional</li>
+        <li><strong>State</strong> — US state dropdown</li>
+        <li><strong>County</strong></li>
+        <li><strong>Phone</strong></li>
+        <li><strong>Email</strong></li>
+      </ul>
+
+      <h3>Validation Rules</h3>
+      <table>
+        <thead><tr><th>Rule</th><th>Condition</th></tr></thead>
+        <tbody>
+          <tr><td>Campaign must be active</td><td><code>is_active=True</code> and current date is within <code>start_date</code>…<code>end_date</code></td></tr>
+          <tr><td>Code must be valid</td><td>Only when <code>validate_submission_code=True</code></td></tr>
+          <tr><td>Code must be unused</td><td><code>SubmissionCode.is_used=False</code></td></tr>
+          <tr><td>No duplicate email</td><td>Only when <code>allow_multiple_submissions=False</code></td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout success">
+        <span class="callout-icon">✅</span>
+        <div>On success, the submission code is immediately marked as <code>is_used=True</code> and the participant sees a thank-you page.</div>
+      </div>
+    </section>
+
+    <!-- ─── DASHBOARD ─── -->
+    <section id="dashboard">
+      <h2>Dashboard</h2>
+      <p>The dashboard (<code>/dashboard/</code>) gives a bird's-eye view of all campaigns:</p>
+      <ul class="styled">
+        <li>Stat cards: total campaigns, active campaigns, total submissions across all campaigns</li>
+        <li>Active campaigns table with submission counts, code stats, and quick-action links</li>
+        <li>Inactive campaigns table</li>
+        <li>Recent submissions feed (last 10 across all campaigns)</li>
+      </ul>
+
+      <h3>Campaign Detail</h3>
+      <p>Clicking into a campaign shows:</p>
+      <ul class="styled">
+        <li>Stat cards: total submissions, available codes, used codes, number of prizes</li>
+        <li>Filter bar — filter by state, county, or free-text search</li>
+        <li>Paginated submissions table</li>
+        <li>Prizes list</li>
+        <li>Raffle history with winner counts and export links</li>
+        <li>Buttons: Export Submissions, Import Codes, Run Raffle</li>
+      </ul>
+    </section>
+
+    <!-- ─── IMPORTING CODES ─── -->
+    <section id="importing-codes">
+      <h2>Importing Submission Codes</h2>
+      <p>Navigate to <strong>Dashboard → Campaign → Import Codes</strong> and upload a <code>.csv</code> file.</p>
+
+      <h3>Accepted CSV Formats</h3>
+
+      <h4>With header</h4>
+      <pre><span class="label">CSV</span><code>code
+ABC123
+DEF456
+GHI789</code></pre>
+
+      <h4>Single column, no header</h4>
+      <pre><span class="label">CSV</span><code>ABC123
+DEF456
+GHI789</code></pre>
+
+      <h3>Options</h3>
+      <table>
+        <thead><tr><th>Option</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>Skip duplicates</td><td>✅ On</td><td>Silently skip codes that already exist for this campaign</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout warning">
+        <span class="callout-icon">⚠️</span>
+        <div>
+          Codes are scoped per campaign. The same code string can exist in multiple campaigns with no conflict.
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── RUNNING A RAFFLE ─── -->
+    <section id="running-raffle">
+      <h2>Running a Raffle</h2>
+
+      <ol class="styled">
+        <li>Ensure the campaign has at least one <strong>Prize</strong> configured (via Admin or admin panel).</li>
+        <li>Go to <strong>Dashboard → Campaign → Run Raffle</strong>.</li>
+        <li>
+          Apply <strong>segment filters</strong> to narrow the participant pool:
+          <ul class="styled" style="margin-top:8px">
+            <li><strong>State</strong> — only participants from a specific US state</li>
+            <li><strong>County</strong> — partial match on county name</li>
+            <li><strong>Submitted From / To</strong> — date range filter</li>
+          </ul>
+        </li>
+        <li>The <strong>live participant counter</strong> updates via AJAX as you change filters.</li>
+        <li>Set the <strong>winner quantity</strong> for each prize (leave at 0 to skip a prize).</li>
+        <li>Add optional <strong>notes</strong> for auditing purposes.</li>
+        <li>Click <strong>Confirm &amp; Run Raffle</strong>.</li>
+        <li>View the results page — winners grouped by prize with position badges.</li>
+        <li>Click <strong>Export Winners CSV</strong> to download the results.</li>
+      </ol>
+
+      <div class="callout info">
+        <span class="callout-icon">💡</span>
+        <div>
+          <strong>How the draw works:</strong> the filtered submission pool is shuffled with Python's <code>random.shuffle()</code>
+          (a Fisher-Yates shuffle using the Mersenne Twister PRNG). Winners are drawn in order across prizes —
+          once a submission wins one prize, it cannot win another in the same raffle.
+        </div>
+      </div>
+
+      <div class="callout danger">
+        <span class="callout-icon">⛔</span>
+        <div>
+          Raffles are <strong>permanent records</strong>. Each draw creates a new <code>Raffle</code> object.
+          Running the raffle multiple times will create multiple independent draws — there is no undo.
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── EXPORTING ─── -->
+    <section id="exporting">
+      <h2>Exporting Data</h2>
+
+      <h3>Submissions Export</h3>
+      <p>
+        From the Campaign Detail page, click <strong>Export CSV</strong>.
+        If state/county filters are active, only the filtered rows are exported.
+      </p>
+      <p>Columns: <code>First Name, Last Name, Email, Phone, State, County, Submission Code, Submitted At</code></p>
+
+      <h3>Winners Export</h3>
+      <p>From any Raffle Results page, click <strong>Export Winners CSV</strong>.</p>
+      <p>Columns:</p>
+      <pre><code>Prize, Position, First Name, Last Name, Email, Phone, State, County, Submission Code, Submitted At</code></pre>
+    </section>
+
+    <!-- ─── ADMIN ─── -->
+    <section id="admin">
+      <h2>Django Admin (Unfold)</h2>
+      <p>
+        The admin panel at <code>/admin/</code> uses <strong>Django Unfold</strong> — a modern replacement for the
+        default Django admin with a custom sidebar, purple theme, and Material icons.
+      </p>
+
+      <h3>Registered Models</h3>
+      <table>
+        <thead><tr><th>Model</th><th>Inlines</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Campaign</td><td>Prize (tabular)</td><td>"View Dashboard →" link in list view</td></tr>
+          <tr><td>Prize</td><td>—</td><td>Filterable by campaign</td></tr>
+          <tr><td>SubmissionCode</td><td>—</td><td>Filterable by campaign and used status</td></tr>
+          <tr><td>Submission</td><td>—</td><td>Full search + filter by state</td></tr>
+          <tr><td>Raffle</td><td>—</td><td>Shows winner count</td></tr>
+          <tr><td>RaffleWinner</td><td>—</td><td>Filterable by campaign and prize</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Sidebar Navigation Groups</h3>
+      <ul class="styled">
+        <li><strong>Campaigns</strong> — Dashboard, Campaigns, Prizes, Submission Codes, Submissions</li>
+        <li><strong>Raffles</strong> — Raffles, Winners</li>
+        <li><strong>Users &amp; Auth</strong> — Users, Groups</li>
+      </ul>
+    </section>
+
+    <!-- ─── PRODUCTION ─── -->
+    <section id="production">
+      <h2>Production Checklist</h2>
+      <ul class="checklist">
+        <li>Set <code>DEBUG=False</code> in <code>.env</code></li>
+        <li>Generate and set a strong <code>SECRET_KEY</code></li>
+        <li>Set <code>ALLOWED_HOSTS</code> to your domain(s)</li>
+        <li>Switch <code>DATABASES</code> to PostgreSQL</li>
+        <li>Run <code>python3 manage.py collectstatic</code></li>
+        <li>Serve static files via nginx or whitenoise</li>
+        <li>Configure HTTPS / SSL certificate</li>
+        <li>Change the default admin password</li>
+        <li>Set up regular database backups</li>
+        <li>Review <code>AUTH_PASSWORD_VALIDATORS</code> settings</li>
+      </ul>
+
+      <h3>Environment Variables</h3>
+      <pre><span class="label">.env</span><code>SECRET_KEY=your-very-long-random-secret-key
+DEBUG=False
+ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com</code></pre>
+
+      <div class="callout warning">
+        <span class="callout-icon">⚠️</span>
+        <div>
+          The default SQLite database is fine for development and low-traffic use,
+          but switch to PostgreSQL for production reliability and concurrency.
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p>Raffle Campaign Manager · Built with Django 4.2 + Django Unfold · Bootstrap 5</p>
+    </footer>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+  // Highlight active sidebar link based on scroll position
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(link => {
+          link.classList.remove('active');
+          if (link.getAttribute('href') === '#' + entry.target.id) {
+            link.classList.add('active');
+          }
+        });
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+
+  // Smooth scroll
+  navLinks.forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.querySelector(link.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+</script>
+
+</body>
+</html>

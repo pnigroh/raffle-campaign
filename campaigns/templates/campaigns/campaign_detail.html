@@ -1,0 +1,317 @@
+{% extends "campaigns/base.html" %}
+
+{% block title %}{{ campaign.name }} - RaffleManager{% endblock %}
+{% block topbar_title %}{{ campaign.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+    <div>
+      <h1>
+        <i class="bi bi-megaphone me-2 text-primary"></i>{{ campaign.name }}
+        {% if campaign.is_active %}
+          <span class="badge-status-active ms-2">Active</span>
+        {% else %}
+          <span class="badge-status-inactive ms-2">Inactive</span>
+        {% endif %}
+      </h1>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+          <li class="breadcrumb-item active">{{ campaign.name }}</li>
+        </ol>
+      </nav>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{% url 'import_codes' campaign.id %}" class="btn btn-outline-secondary">
+        <i class="bi bi-upload me-1"></i>Import Codes
+      </a>
+      <a href="{% url 'raffle' campaign.id %}" class="btn btn-warning text-dark fw-semibold">
+        <i class="bi bi-stars me-1"></i>Run Raffle
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Stats Row -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="stat-card blue">
+      <div class="stat-icon" style="background:rgba(255,255,255,0.2);">
+        <i class="bi bi-people-fill text-white"></i>
+      </div>
+      <div class="stat-value">{{ submissions.count }}</div>
+      <div class="stat-label">{% if state_filter or county_filter or search %}Filtered{% else %}Total{% endif %} Submissions</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card green">
+      <div class="stat-icon" style="background:rgba(255,255,255,0.2);">
+        <i class="bi bi-ticket-perforated text-white"></i>
+      </div>
+      <div class="stat-value">{{ codes_available }}</div>
+      <div class="stat-label">Codes Available</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card orange">
+      <div class="stat-icon" style="background:rgba(255,255,255,0.2);">
+        <i class="bi bi-check2-circle text-white"></i>
+      </div>
+      <div class="stat-value">{{ codes_used }}</div>
+      <div class="stat-label">Codes Used</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card purple">
+      <div class="stat-icon" style="background:rgba(255,255,255,0.2);">
+        <i class="bi bi-trophy-fill text-white"></i>
+      </div>
+      <div class="stat-value">{{ prizes.count }}</div>
+      <div class="stat-label">Prizes Configured</div>
+    </div>
+  </div>
+</div>
+
+<!-- Campaign Info Banner -->
+<div class="card mb-4">
+  <div class="card-body py-3">
+    <div class="row align-items-center g-3">
+      <div class="col-md-6">
+        {% if campaign.description %}
+          <p class="mb-0 text-muted" style="font-size:0.9rem;">{{ campaign.description }}</p>
+        {% else %}
+          <p class="mb-0 text-muted fst-italic" style="font-size:0.9rem;">No description provided.</p>
+        {% endif %}
+      </div>
+      <div class="col-md-6">
+        <div class="d-flex flex-wrap gap-3 justify-content-md-end" style="font-size:0.85rem;">
+          <div>
+            <span class="text-muted">Start:</span>
+            <strong class="ms-1">{{ campaign.start_date|date:"M d, Y H:i" }}</strong>
+          </div>
+          <div>
+            <span class="text-muted">End:</span>
+            <strong class="ms-1">{{ campaign.end_date|date:"M d, Y H:i" }}</strong>
+          </div>
+          <div>
+            <span class="text-muted">Code Required:</span>
+            <strong class="ms-1">{% if campaign.validate_submission_code %}Yes{% else %}No{% endif %}</strong>
+          </div>
+          <div>
+            <span class="text-muted">Submission URL:</span>
+            <a href="/submit/{{ campaign.slug }}/" class="ms-1 text-primary" target="_blank">
+              /submit/{{ campaign.slug }}/ <i class="bi bi-box-arrow-up-right ms-1" style="font-size:0.75rem;"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Prizes -->
+{% if prizes %}
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <span><i class="bi bi-trophy me-2 text-warning"></i>Prizes</span>
+    <a href="/admin/campaigns/prize/?campaign__id__exact={{ campaign.id }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-pencil me-1"></i>Edit Prizes
+    </a>
+  </div>
+  <div class="card-body py-2">
+    <div class="row g-2">
+      {% for prize in prizes %}
+      <div class="col-md-4 col-lg-3">
+        <div class="p-3 rounded-3 border" style="background:#fafbff;">
+          <div class="fw-semibold text-dark">{{ prize.name }}</div>
+          {% if prize.description %}
+            <div class="text-muted-sm mt-1">{{ prize.description }}</div>
+          {% endif %}
+          <div class="mt-2">
+            <span class="badge bg-primary rounded-pill">Qty: {{ prize.quantity }}</span>
+            <span class="badge bg-light text-muted border ms-1">Order: {{ prize.order }}</span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
+  <i class="bi bi-exclamation-triangle-fill"></i>
+  <span>No prizes configured for this campaign.
+    <a href="/admin/campaigns/prize/add/?campaign={{ campaign.id }}" class="alert-link">Add prizes</a>
+    before running a raffle.
+  </span>
+</div>
+{% endif %}
+
+<!-- Filter Bar -->
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-sm-6 col-lg-3">
+        <label class="form-label">Search</label>
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-light border-end-0">
+            <i class="bi bi-search text-muted"></i>
+          </span>
+          <input type="text" name="search" class="form-control border-start-0" placeholder="Name, email, phone..." value="{{ search }}">
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <label class="form-label">State</label>
+        <select name="state" class="form-select form-select-sm">
+          <option value="">All States</option>
+          {% for s in states %}
+            <option value="{{ s }}" {% if s == state_filter %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <label class="form-label">County</label>
+        <input type="text" name="county" class="form-control form-control-sm" placeholder="Filter by county..." value="{{ county_filter }}">
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary btn-sm flex-fill">
+            <i class="bi bi-funnel me-1"></i>Filter
+          </button>
+          <a href="{% url 'campaign_detail' campaign.id %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-x-lg"></i>
+          </a>
+          <a href="{% url 'export_submissions' campaign.id %}?state={{ state_filter }}&county={{ county_filter }}" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-download me-1"></i>CSV
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Submissions Table -->
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <span><i class="bi bi-person-lines-fill me-2 text-primary"></i>Submissions
+      <span class="badge bg-primary rounded-pill ms-1">{{ submissions.count }}</span>
+    </span>
+    {% if state_filter or county_filter or search %}
+      <span class="text-muted-sm">
+        <i class="bi bi-funnel-fill text-warning me-1"></i>Filters active
+      </span>
+    {% endif %}
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>State</th>
+          <th>County</th>
+          <th>Code</th>
+          <th>Submitted</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sub in submissions %}
+        <tr>
+          <td class="text-muted-sm">{{ forloop.counter }}</td>
+          <td class="fw-semibold">{{ sub.full_name }}</td>
+          <td>{{ sub.email }}</td>
+          <td>{{ sub.phone }}</td>
+          <td><span class="badge bg-light text-dark border">{{ sub.state }}</span></td>
+          <td>{{ sub.county }}</td>
+          <td>
+            {% if sub.submission_code %}
+              <code class="small">{{ sub.submission_code.code }}</code>
+            {% else %}
+              <span class="text-muted-sm">—</span>
+            {% endif %}
+          </td>
+          <td><span class="text-muted-sm">{{ sub.submitted_at|date:"M d, Y H:i" }}</span></td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center py-5 text-muted">
+            <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
+            No submissions found{% if state_filter or county_filter or search %} matching your filters{% endif %}.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Raffle History -->
+<div class="card">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <span><i class="bi bi-stars me-2 text-warning"></i>Raffle History</span>
+    <a href="{% url 'raffle' campaign.id %}" class="btn btn-sm btn-warning text-dark fw-semibold">
+      <i class="bi bi-plus-lg me-1"></i>Run New Raffle
+    </a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Conducted By</th>
+          <th>Participants</th>
+          <th>Winners</th>
+          <th>Filters</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for raffle in raffles %}
+        <tr>
+          <td>
+            <span class="fw-semibold">{{ raffle.conducted_at|date:"M d, Y" }}</span>
+            <div class="text-muted-sm">{{ raffle.conducted_at|date:"H:i" }}</div>
+          </td>
+          <td>{{ raffle.conducted_by.username|default:"—" }}</td>
+          <td>{{ raffle.total_participants }}</td>
+          <td>
+            <span class="badge bg-warning text-dark">{{ raffle.winners.count }}</span>
+          </td>
+          <td>
+            <span class="text-muted-sm">
+              {% if raffle.segment_state %}State: {{ raffle.segment_state }}{% endif %}
+              {% if raffle.segment_county %} County: {{ raffle.segment_county }}{% endif %}
+              {% if raffle.segment_date_from %} From: {{ raffle.segment_date_from }}{% endif %}
+              {% if raffle.segment_date_to %} To: {{ raffle.segment_date_to }}{% endif %}
+              {% if not raffle.segment_state and not raffle.segment_county and not raffle.segment_date_from and not raffle.segment_date_to %}
+                <em>None</em>
+              {% endif %}
+            </span>
+          </td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{% url 'raffle_results' raffle.id %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-trophy me-1"></i>Results
+              </a>
+              <a href="{% url 'export_winners' raffle.id %}" class="btn btn-sm btn-outline-success">
+                <i class="bi bi-download"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center py-4 text-muted">
+            <i class="bi bi-stars fs-2 d-block mb-2 opacity-25"></i>
+            No raffles conducted yet.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

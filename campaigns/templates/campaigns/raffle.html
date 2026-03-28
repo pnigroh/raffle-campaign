@@ -1,0 +1,317 @@
+{% extends "campaigns/base.html" %}
+
+{% block title %}Run Raffle - {{ campaign.name }}{% endblock %}
+{% block topbar_title %}Run Raffle: {{ campaign.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+    <div>
+      <h1><i class="bi bi-stars me-2 text-warning"></i>Run Raffle</h1>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'campaign_detail' campaign.id %}">{{ campaign.name }}</a></li>
+          <li class="breadcrumb-item active">Run Raffle</li>
+        </ol>
+      </nav>
+    </div>
+    <a href="{% url 'campaign_detail' campaign.id %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Back to Campaign
+    </a>
+  </div>
+</div>
+
+<!-- Warning Banner -->
+<div class="alert alert-warning d-flex align-items-start gap-3 mb-4" style="border-left: 4px solid #f59e0b; border-radius: 12px;">
+  <i class="bi bi-exclamation-triangle-fill text-warning fs-5 mt-1 flex-shrink-0"></i>
+  <div>
+    <strong>Important:</strong> Once a raffle is conducted, it cannot be undone. Winners are randomly selected and permanently recorded.
+    Make sure your filters and prize quantities are correct before proceeding.
+  </div>
+</div>
+
+<form method="post" id="raffleForm">
+  {% csrf_token %}
+
+  <div class="row g-4">
+    <!-- Left: Filters -->
+    <div class="col-lg-5">
+
+      <!-- Participant Pool Card -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <i class="bi bi-funnel me-2 text-primary"></i>Participant Filters
+        </div>
+        <div class="card-body">
+          <p class="text-muted" style="font-size:0.85rem;">
+            Filter which submissions are eligible for this raffle. Leave all blank to include everyone.
+          </p>
+
+          <!-- Live Count Badge -->
+          <div class="p-3 rounded-3 mb-4 text-center" style="background: linear-gradient(135deg, #1a2035, #2d3a5e);">
+            <div style="color:rgba(255,255,255,0.6); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.35rem;">
+              <i class="bi bi-people-fill me-1"></i>Current Participant Pool
+            </div>
+            <div id="poolCount" style="font-size:2.5rem; font-weight:800; color:#4f8ef7; line-height:1;">
+              {{ total_submissions }}
+            </div>
+            <div style="color:rgba(255,255,255,0.5); font-size:0.8rem; margin-top:0.25rem;">participants match filters</div>
+          </div>
+
+          <!-- State Filter -->
+          <div class="mb-3">
+            <label class="form-label">State</label>
+            <select name="state" id="id_state" class="form-select filter-field">
+              <option value="">All States</option>
+              {% for s in states %}
+                <option value="{{ s }}">{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- County Filter -->
+          <div class="mb-3">
+            <label class="form-label">County</label>
+            <input
+              type="text"
+              name="county"
+              id="id_county"
+              class="form-control filter-field"
+              placeholder="Filter by county..."
+            >
+          </div>
+
+          <!-- Date Filters -->
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label">Submitted From</label>
+              <input
+                type="date"
+                name="date_from"
+                id="id_date_from"
+                class="form-control filter-field"
+              >
+            </div>
+            <div class="col-6">
+              <label class="form-label">Submitted To</label>
+              <input
+                type="date"
+                name="date_to"
+                id="id_date_to"
+                class="form-control filter-field"
+              >
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div class="mb-0">
+            <label class="form-label">Raffle Notes <span class="text-muted fw-normal">(optional)</span></label>
+            <textarea
+              name="notes"
+              id="id_notes"
+              class="form-control"
+              rows="2"
+              placeholder="Optional notes about this raffle draw..."
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right: Prizes -->
+    <div class="col-lg-7">
+      <div class="card mb-4">
+        <div class="card-header">
+          <i class="bi bi-trophy me-2 text-warning"></i>Prize Selection &amp; Quantities
+        </div>
+        <div class="card-body">
+          <p class="text-muted" style="font-size:0.85rem;">
+            Set how many winners to draw for each prize. A winner can only win once across all prizes.
+          </p>
+
+          <div class="row g-3">
+            {% for prize in prizes %}
+            <div class="col-md-6">
+              <div class="p-3 rounded-3 border position-relative" style="background:#fafbff; transition: all 0.2s;" id="prizeCard_{{ prize.id }}">
+                <div class="d-flex align-items-start justify-content-between mb-2">
+                  <div>
+                    <div class="fw-semibold text-dark" style="font-size:0.95rem;">{{ prize.name }}</div>
+                    {% if prize.description %}
+                      <div class="text-muted" style="font-size:0.8rem;">{{ prize.description }}</div>
+                    {% endif %}
+                  </div>
+                  <span class="badge bg-warning text-dark ms-2">{{ prize.quantity }} avail.</span>
+                </div>
+                <div class="d-flex align-items-center gap-2 mt-2">
+                  <label class="form-label mb-0 text-muted" style="font-size:0.8rem; white-space:nowrap;">
+                    Winners to draw:
+                  </label>
+                  <input
+                    type="number"
+                    name="prize_qty_{{ prize.id }}"
+                    class="form-control form-control-sm prize-qty-input"
+                    min="0"
+                    max="{{ prize.quantity }}"
+                    value="0"
+                    style="max-width:80px;"
+                    data-prize-id="{{ prize.id }}"
+                  >
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <hr class="my-3">
+
+          <!-- Summary -->
+          <div class="d-flex align-items-center justify-content-between p-3 rounded-3" style="background:#f8fafc; border: 1px solid #e9ecef;">
+            <div>
+              <div class="fw-semibold text-dark">Total Winners to Draw</div>
+              <div class="text-muted" style="font-size:0.82rem;">Across all prizes</div>
+            </div>
+            <div style="font-size:1.75rem; font-weight:800; color:#4f8ef7;" id="totalWinnersCount">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Confirm & Run -->
+      <div class="card" style="border: 2px solid #fbbf24; background: linear-gradient(135deg, #fffbeb, #fefce8);">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-start gap-3 mb-3">
+            <div style="width:44px; height:44px; background:#f59e0b; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+              <i class="bi bi-stars text-white fs-5"></i>
+            </div>
+            <div>
+              <div class="fw-bold text-dark mb-1">Ready to Draw Winners?</div>
+              <div class="text-muted" style="font-size:0.85rem;">
+                <span id="summaryPool" class="fw-semibold text-dark">{{ total_submissions }}</span> participants in pool &bull;
+                <span id="summaryWinners" class="fw-semibold text-dark">0</span> winners to be drawn
+              </div>
+            </div>
+          </div>
+          <button
+            type="submit"
+            class="btn btn-warning text-dark fw-bold w-100 py-2"
+            style="border-radius:10px; font-size:1rem;"
+            id="runRaffleBtn"
+            onclick="return confirmRaffle()"
+          >
+            <i class="bi bi-stars me-2"></i>Conduct Raffle Now
+          </button>
+          <div class="text-center mt-2" style="font-size:0.78rem; color:#92400e;">
+            <i class="bi bi-exclamation-circle me-1"></i>This action cannot be undone
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const filterCountUrl = "{% url 'ajax_filter_count' campaign.id %}";
+
+  // Elements
+  const filterFields = document.querySelectorAll('.filter-field');
+  const poolCountEl = document.getElementById('poolCount');
+  const summaryPoolEl = document.getElementById('summaryPool');
+  const summaryWinnersEl = document.getElementById('summaryWinners');
+  const totalWinnersEl = document.getElementById('totalWinnersCount');
+  const prizeQtyInputs = document.querySelectorAll('.prize-qty-input');
+
+  // Debounce
+  let debounceTimer;
+  function debounce(fn, delay) {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(fn, delay);
+  }
+
+  // Fetch participant count
+  function fetchCount() {
+    const state = document.getElementById('id_state').value;
+    const county = document.getElementById('id_county').value;
+    const dateFrom = document.getElementById('id_date_from').value;
+    const dateTo = document.getElementById('id_date_to').value;
+
+    const params = new URLSearchParams();
+    if (state) params.append('state', state);
+    if (county) params.append('county', county);
+    if (dateFrom) params.append('date_from', dateFrom);
+    if (dateTo) params.append('date_to', dateTo);
+
+    poolCountEl.style.opacity = '0.5';
+
+    fetch(`${filterCountUrl}?${params.toString()}`)
+      .then(r => r.json())
+      .then(data => {
+        poolCountEl.textContent = data.count;
+        summaryPoolEl.textContent = data.count;
+        poolCountEl.style.opacity = '1';
+      })
+      .catch(() => {
+        poolCountEl.style.opacity = '1';
+      });
+  }
+
+  // Update total winners
+  function updateTotalWinners() {
+    let total = 0;
+    prizeQtyInputs.forEach(inp => {
+      const val = parseInt(inp.value) || 0;
+      total += val;
+      const card = document.getElementById(`prizeCard_${inp.dataset.prizeId}`);
+      if (card) {
+        if (val > 0) {
+          card.style.borderColor = '#4f8ef7';
+          card.style.background = '#eff6ff';
+        } else {
+          card.style.borderColor = '#e5e7eb';
+          card.style.background = '#fafbff';
+        }
+      }
+    });
+    totalWinnersEl.textContent = total;
+    summaryWinnersEl.textContent = total;
+  }
+
+  // Event listeners
+  filterFields.forEach(field => {
+    field.addEventListener('change', () => fetchCount());
+    field.addEventListener('input', () => debounce(fetchCount, 400));
+  });
+
+  prizeQtyInputs.forEach(inp => {
+    inp.addEventListener('input', updateTotalWinners);
+    inp.addEventListener('change', updateTotalWinners);
+  });
+
+  // Confirm before submit
+  function confirmRaffle() {
+    const pool = parseInt(poolCountEl.textContent) || 0;
+    const winners = parseInt(totalWinnersEl.textContent) || 0;
+
+    if (winners === 0) {
+      alert('Please enter a quantity of at least 1 for at least one prize.');
+      return false;
+    }
+    if (pool === 0) {
+      alert('There are no participants matching your current filters.');
+      return false;
+    }
+
+    return confirm(
+      `You are about to draw ${winners} winner(s) from a pool of ${pool} participants.\n\n` +
+      `This action cannot be undone. Proceed?`
+    );
+  }
+
+  // Initial count
+  fetchCount();
+  updateTotalWinners();
+</script>
+{% endblock %}

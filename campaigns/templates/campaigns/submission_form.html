@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ campaign.name }} - Enter to Win</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root {
+      --accent: #4f8ef7;
+      --accent-dark: #2563eb;
+    }
+
+    body {
+      background: linear-gradient(160deg, #f0f4ff 0%, #fafbff 60%, #f0f4ff 100%);
+      min-height: 100vh;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    .public-header {
+      background: linear-gradient(135deg, #1a2035, #2d3a5e);
+      padding: 1.25rem 0;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+
+    .public-header .brand {
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.1rem;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .public-header .brand-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+
+    .campaign-hero {
+      background: linear-gradient(135deg, #1a2035, #2d3a5e);
+      color: #fff;
+      padding: 3.5rem 0 4rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .campaign-hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 60% 40%, rgba(79,142,247,0.15) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .campaign-hero h1 {
+      font-size: clamp(1.75rem, 5vw, 2.75rem);
+      font-weight: 800;
+      margin-bottom: 0.75rem;
+      position: relative;
+    }
+
+    .campaign-hero .lead {
+      font-size: 1.05rem;
+      color: rgba(255,255,255,0.75);
+      max-width: 600px;
+      margin: 0 auto 1.5rem;
+      position: relative;
+    }
+
+    .campaign-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(34,197,94,0.15);
+      border: 1px solid rgba(34,197,94,0.3);
+      color: #86efac;
+      border-radius: 20px;
+      padding: 0.35rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .campaign-badge.closed {
+      background: rgba(239,68,68,0.15);
+      border-color: rgba(239,68,68,0.3);
+      color: #fca5a5;
+    }
+
+    .form-card {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(26,32,53,0.12);
+      padding: 2.5rem;
+      margin-top: -2rem;
+      position: relative;
+      z-index: 10;
+    }
+
+    .form-card h2 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #1a2035;
+      margin-bottom: 0.25rem;
+    }
+
+    .form-card .subtitle {
+      color: #94a3b8;
+      font-size: 0.875rem;
+      margin-bottom: 2rem;
+    }
+
+    .form-section-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #94a3b8;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .form-control, .form-select {
+      border-radius: 10px;
+      border: 1.5px solid #e2e8f0;
+      padding: 0.6rem 0.9rem;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .form-control:focus, .form-select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(79,142,247,0.15);
+    }
+
+    .form-control.is-invalid {
+      border-color: #ef4444;
+    }
+
+    .form-label {
+      font-weight: 600;
+      font-size: 0.8rem;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 0.35rem;
+    }
+
+    .code-section {
+      background: linear-gradient(135deg, #f0f4ff, #fafbff);
+      border: 2px dashed #bfdbfe;
+      border-radius: 14px;
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .code-section.required {
+      border-color: var(--accent);
+      background: linear-gradient(135deg, #eff6ff, #f0f4ff);
+    }
+
+    .code-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--accent);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .btn-submit {
+      background: linear-gradient(135deg, #4f8ef7, #2563eb);
+      border: none;
+      border-radius: 12px;
+      padding: 0.85rem 2rem;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      width: 100%;
+      transition: all 0.2s;
+      box-shadow: 0 4px 16px rgba(79,142,247,0.3);
+      letter-spacing: 0.3px;
+    }
+
+    .btn-submit:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(79,142,247,0.4);
+      background: linear-gradient(135deg, #3b7de8, #1d4ed8);
+      color: #fff;
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .privacy-note {
+      font-size: 0.78rem;
+      color: #94a3b8;
+      text-align: center;
+      margin-top: 1rem;
+    }
+
+    .closed-overlay {
+      text-align: center;
+      padding: 3rem 1.5rem;
+    }
+
+    .closed-overlay .closed-icon {
+      width: 80px;
+      height: 80px;
+      background: #fef2f2;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      color: #ef4444;
+      margin: 0 auto 1.5rem;
+    }
+
+    .public-footer {
+      text-align: center;
+      padding: 2.5rem 1rem 1.5rem;
+      font-size: 0.78rem;
+      color: #94a3b8;
+    }
+
+    .alert {
+      border-radius: 10px;
+      font-size: 0.875rem;
+    }
+
+    .invalid-feedback {
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="public-header">
+  <div class="container">
+    <a href="#" class="brand">
+      <div class="brand-icon"><i class="bi bi-ticket-perforated-fill text-white"></i></div>
+      RaffleManager
+    </a>
+  </div>
+</div>
+
+<!-- Hero -->
+<div class="campaign-hero">
+  <div class="container">
+    {% if campaign_open %}
+      <span class="campaign-badge mb-3 d-inline-flex">
+        <i class="bi bi-check-circle-fill"></i> Campaign Open
+      </span>
+    {% else %}
+      <span class="campaign-badge closed mb-3 d-inline-flex">
+        <i class="bi bi-x-circle-fill"></i> Campaign Closed
+      </span>
+    {% endif %}
+    <h1>{{ campaign.name }}</h1>
+    {% if campaign.description %}
+      <p class="lead">{{ campaign.description }}</p>
+    {% endif %}
+    <div style="font-size:0.85rem; color:rgba(255,255,255,0.5);">
+      <i class="bi bi-calendar3 me-1"></i>
+      {{ campaign.start_date|date:"M d, Y" }} &mdash; {{ campaign.end_date|date:"M d, Y" }}
+    </div>
+  </div>
+</div>
+
+<!-- Form -->
+<div class="container" style="max-width: 680px;">
+  <div class="form-card">
+
+    {% if not campaign_open %}
+      <div class="closed-overlay">
+        <div class="closed-icon">
+          <i class="bi bi-clock-history"></i>
+        </div>
+        <h3 class="fw-bold text-dark mb-2">This Campaign is Closed</h3>
+        <p class="text-muted">The entry period for <strong>{{ campaign.name }}</strong> has ended.<br>Thank you for your interest!</p>
+      </div>
+    {% else %}
+
+      <h2><i class="bi bi-pencil-square me-2 text-primary"></i>Enter to Win</h2>
+      <p class="subtitle">Fill out the form below to enter the raffle. All fields are required.</p>
+
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <!-- Personal Info -->
+        <div class="form-section-title"><i class="bi bi-person me-1"></i>Personal Information</div>
+        <div class="row g-3 mb-3">
+          <div class="col-sm-6">
+            <label class="form-label" for="id_first_name">First Name</label>
+            <input
+              type="text"
+              name="first_name"
+              id="id_first_name"
+              class="form-control {% if form.first_name.errors %}is-invalid{% endif %}"
+              placeholder="First Name"
+              value="{{ form.first_name.value|default:'' }}"
+              required
+            >
+            {% if form.first_name.errors %}
+              <div class="invalid-feedback">{{ form.first_name.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label" for="id_last_name">Last Name</label>
+            <input
+              type="text"
+              name="last_name"
+              id="id_last_name"
+              class="form-control {% if form.last_name.errors %}is-invalid{% endif %}"
+              placeholder="Last Name"
+              value="{{ form.last_name.value|default:'' }}"
+              required
+            >
+            {% if form.last_name.errors %}
+              <div class="invalid-feedback">{{ form.last_name.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Location -->
+        <div class="form-section-title mt-3"><i class="bi bi-geo-alt me-1"></i>Location</div>
+        <div class="row g-3 mb-3">
+          <div class="col-sm-6">
+            <label class="form-label" for="id_state">State</label>
+            <select name="state" id="id_state" class="form-select {% if form.state.errors %}is-invalid{% endif %}" required>
+              {% for val, label in form.fields.state.choices %}
+                <option value="{{ val }}" {% if form.state.value == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            {% if form.state.errors %}
+              <div class="invalid-feedback">{{ form.state.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label" for="id_county">County</label>
+            <input
+              type="text"
+              name="county"
+              id="id_county"
+              class="form-control {% if form.county.errors %}is-invalid{% endif %}"
+              placeholder="County"
+              value="{{ form.county.value|default:'' }}"
+              required
+            >
+            {% if form.county.errors %}
+              <div class="invalid-feedback">{{ form.county.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Contact -->
+        <div class="form-section-title mt-3"><i class="bi bi-envelope me-1"></i>Contact Details</div>
+        <div class="row g-3 mb-3">
+          <div class="col-sm-6">
+            <label class="form-label" for="id_phone">Phone Number</label>
+            <input
+              type="tel"
+              name="phone"
+              id="id_phone"
+              class="form-control {% if form.phone.errors %}is-invalid{% endif %}"
+              placeholder="Phone Number"
+              value="{{ form.phone.value|default:'' }}"
+              required
+            >
+            {% if form.phone.errors %}
+              <div class="invalid-feedback">{{ form.phone.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label" for="id_email">Email Address</label>
+            <input
+              type="email"
+              name="email"
+              id="id_email"
+              class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+              placeholder="Email Address"
+              value="{{ form.email.value|default:'' }}"
+              required
+            >
+            {% if form.email.errors %}
+              <div class="invalid-feedback">{{ form.email.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Submission Code -->
+        <div class="code-section {% if campaign.validate_submission_code %}required{% endif %}">
+          <div class="d-flex align-items-start gap-3">
+            <div class="code-icon">
+              <i class="bi bi-qr-code"></i>
+            </div>
+            <div class="flex-fill">
+              <div class="fw-semibold text-dark mb-1">
+                Submission Code
+                {% if campaign.validate_submission_code %}
+                  <span class="badge bg-primary ms-1" style="font-size:0.7rem;">Required</span>
+                {% else %}
+                  <span class="badge bg-light text-muted border ms-1" style="font-size:0.7rem;">Optional</span>
+                {% endif %}
+              </div>
+              <div class="text-muted mb-2" style="font-size:0.82rem;">
+                {% if campaign.validate_submission_code %}
+                  You must enter a valid submission code to complete your entry.
+                {% else %}
+                  Enter your submission code if you have one.
+                {% endif %}
+              </div>
+              <input
+                type="text"
+                name="submission_code_input"
+                id="id_submission_code_input"
+                class="form-control {% if form.submission_code_input.errors %}is-invalid{% endif %}"
+                placeholder="Enter your submission code"
+                value="{{ form.submission_code_input.value|default:'' }}"
+                {% if campaign.validate_submission_code %}required{% endif %}
+              >
+              {% if form.submission_code_input.errors %}
+                <div class="invalid-feedback d-block">{{ form.submission_code_input.errors.0 }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Non-field errors -->
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger mt-3 d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <div>
+              {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+
+        <div class="mt-4">
+          <button type="submit" class="btn-submit btn">
+            <i class="bi bi-send-fill me-2"></i>Submit My Entry
+          </button>
+        </div>
+
+        <p class="privacy-note mt-3">
+          <i class="bi bi-shield-check me-1"></i>
+          Your information is kept private and will only be used for raffle purposes.
+        </p>
+      </form>
+    {% endif %}
+
+  </div>
+
+  <div class="public-footer">
+    &copy; {{ campaign.name }} &mdash; Powered by RaffleManager
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
