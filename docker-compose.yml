@@ -4,7 +4,7 @@ services:
     container_name: raffle-web
     restart: "no"
     ports:
-      - "${RAFFLE_WEB_PORT:-8500}:8000"
+      - "${RAFFLE_CAMPAIGN_WEB_PORT:?Mila-bot must inject RAFFLE_CAMPAIGN_WEB_PORT}:8000"
     volumes:
       - .:/app
       - raffle_db:/app/db
