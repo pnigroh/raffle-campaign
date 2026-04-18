@@ -1,4 +1,4 @@
-name: raffle-campaign-manager
+name: raffle-campaign
 
 services:
   web:
