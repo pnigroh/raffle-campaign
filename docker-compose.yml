@@ -1,3 +1,5 @@
+name: raffle-campaign-manager
+
 services:
   web:
     build: .
