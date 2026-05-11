@@ -307,7 +307,13 @@ class PrizeModalRenderTests(TestCase):
         self.assertIn('data-bs-target="#prizeDeleteModal"', body)
 
     def test_card_header_has_add_prize_trigger(self):
+        # Force the {% if prizes %} branch by creating a prize, so the
+        # add-trigger we assert on must be the card-header button (not the
+        # empty-state alert link).
+        Prize.objects.create(campaign=self.camp_x, name="Any", quantity=1, order=10)
         self.client.force_login(self.alice)
         resp = self.client.get(reverse("campaign_detail", args=[self.camp_x.id]))
         body = resp.content.decode()
         self.assertIn('data-prize-action="add"', body)
+        # Header button is btn-primary; alert link uses alert-link.
+        self.assertIn('class="btn btn-sm btn-primary"', body)
