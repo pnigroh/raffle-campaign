@@ -305,3 +305,11 @@ class RaffleWinnerAdmin(ModelAdmin):
         if ids is None:
             return qs
         return qs.filter(raffle__campaign_id__in=ids)
+
+
+# ============================================================
+# Promo-Domo admin branding
+# ============================================================
+admin.site.site_header = "Promo-Domo Admin"
+admin.site.site_title = "Promo-Domo"
+admin.site.index_title = "Campaign Operations"

@@ -128,9 +128,9 @@ CRISPY_TEMPLATE_PACK = 'bootstrap5'
 from django.urls import reverse_lazy
 
 UNFOLD = {
-    "SITE_TITLE": "Raffle Manager",
-    "SITE_HEADER": "Raffle Manager",
-    "SITE_SUBHEADER": "Campaign & Raffle Administration",
+    "SITE_TITLE": "Promo-Domo",
+    "SITE_HEADER": "Promo-Domo Admin",
+    "SITE_SUBHEADER": "Campaign Operations",
     "SITE_URL": "/dashboard/",
     "SITE_SYMBOL": "confirmation_number",
     "SHOW_HISTORY": True,
