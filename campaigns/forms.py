@@ -120,3 +120,21 @@ class CodeImportForm(forms.Form):
     skip_duplicates = forms.BooleanField(
         required=False, initial=True, label='Skip duplicate codes'
     )
+
+
+class PrizeForm(forms.ModelForm):
+    class Meta:
+        model = Prize
+        fields = ["name", "description", "quantity", "order"]
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control", "maxlength": 200}),
+            "description": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+            "quantity": forms.NumberInput(attrs={"class": "form-control", "min": 1}),
+            "order": forms.NumberInput(attrs={"class": "form-control", "min": 0}),
+        }
+
+    def clean_quantity(self):
+        qty = self.cleaned_data["quantity"]
+        if qty < 1:
+            raise forms.ValidationError("Cantidad debe ser al menos 1.")
+        return qty
