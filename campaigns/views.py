@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Max
 from django.http import JsonResponse, HttpResponseRedirect
 import json
 
@@ -134,6 +134,7 @@ def campaign_detail(request, campaign_id):
     states = campaign.submissions.values_list('state', flat=True).distinct().order_by('state')
 
     prizes = campaign.prizes.all()
+    next_prize_order = (campaign.prizes.aggregate(m=Max('order'))['m'] or 0) + 10
     codes_total = campaign.submission_codes.count()
     codes_used = campaign.submission_codes.filter(is_used=True).count()
     codes_available = codes_total - codes_used
@@ -143,6 +144,7 @@ def campaign_detail(request, campaign_id):
         'campaign': campaign,
         'submissions': submissions,
         'prizes': prizes,
+        'next_prize_order': next_prize_order,
         'states': states,
         'state_filter': state_filter,
         'county_filter': county_filter,

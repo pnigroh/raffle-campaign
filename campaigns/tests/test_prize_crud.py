@@ -233,3 +233,48 @@ class PrizeDeleteTests(TestCase):
         self.assertEqual(resp.status_code, 404)
         # prize_y must still exist
         self.assertTrue(Prize.objects.filter(id=self.prize_y.id).exists())
+
+
+class PrizeMiscTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.alice = User.objects.create_user("alice", password="pw", is_staff=True)
+        cls.bob = User.objects.create_user("bob", password="pw", is_staff=True)
+        cls.charlie = User.objects.create_superuser("charlie", "c@x.com", "pw")
+        cls.camp_x = _campaign("Campaign X", "camp-x", manager=cls.alice)
+        cls.camp_y = _campaign("Campaign Y", "camp-y", manager=cls.bob)
+
+    def test_superuser_can_add_prize_to_any_campaign(self):
+        self.client.force_login(self.charlie)
+        resp = self.client.post(
+            reverse("prize_add", args=[self.camp_y.id]),
+            data={"name": "Super-added", "description": "", "quantity": 1, "order": 0},
+        )
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(
+            Prize.objects.filter(campaign=self.camp_y, name="Super-added").exists()
+        )
+
+    def test_invalid_form_redirects_with_error_flash(self):
+        self.client.force_login(self.alice)
+        resp = self.client.post(
+            reverse("prize_add", args=[self.camp_x.id]),
+            data={"name": "", "description": "", "quantity": 0, "order": 0},
+            follow=True,  # follow the redirect so messages are surfaced
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(Prize.objects.filter(campaign=self.camp_x).exists())
+        flash = [m.message for m in resp.context["messages"]]
+        self.assertTrue(any("No se pudo guardar el premio" in m for m in flash), flash)
+
+    def test_next_prize_order_defaults_to_max_plus_ten(self):
+        # No existing prizes -> next is 10.
+        self.client.force_login(self.alice)
+        resp = self.client.get(reverse("campaign_detail", args=[self.camp_x.id]))
+        self.assertEqual(resp.context["next_prize_order"], 10)
+
+        # With prizes at orders 5 and 15 -> next is 25.
+        Prize.objects.create(campaign=self.camp_x, name="A", quantity=1, order=5)
+        Prize.objects.create(campaign=self.camp_x, name="B", quantity=1, order=15)
+        resp = self.client.get(reverse("campaign_detail", args=[self.camp_x.id]))
+        self.assertEqual(resp.context["next_prize_order"], 25)
