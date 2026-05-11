@@ -3,21 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}{% if campaign %}{{ campaign.brand_title }}{% else %}RaffleManager{% endif %}{% endblock %}</title>
+  <title>{% block title %}{% if campaign %}{{ campaign.brand_title }}{% else %}Promo-Domo{% endif %}{% endblock %}</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" crossorigin="anonymous">
+  {% include "campaigns/_brand_assets.html" %}
   <style>
     :root {
-      --sidebar-bg: {% if campaign %}{{ campaign.brand_sidebar }}{% else %}#1a2035{% endif %};
+      --sidebar-bg: {% if campaign %}{{ campaign.brand_sidebar }}{% else %}var(--pd-cream-soft){% endif %};
       --sidebar-width: 260px;
-      --sidebar-link: #a0aec0;
-      --sidebar-link-hover: #ffffff;
-      --sidebar-active: {% if campaign %}{{ campaign.brand_primary }}{% else %}#4f8ef7{% endif %};
+      --sidebar-link: {% if campaign %}#a0aec0{% else %}var(--pd-ink-soft){% endif %};
+      --sidebar-link-hover: {% if campaign %}#ffffff{% else %}var(--pd-ink){% endif %};
+      --sidebar-active: {% if campaign %}{{ campaign.brand_primary }}{% else %}var(--pd-coral){% endif %};
+      --sidebar-border: {% if campaign %}rgba(255,255,255,0.08){% else %}var(--pd-line){% endif %};
+      --sidebar-hover-bg: {% if campaign %}rgba(255,255,255,0.06){% else %}rgba(251,113,133,0.08){% endif %};
+      --sidebar-hover-border: {% if campaign %}rgba(160,174,192,0.5){% else %}rgba(251,113,133,0.5){% endif %};
+      --sidebar-active-bg: {% if campaign %}rgba(79,142,247,0.18){% else %}rgba(251,113,133,0.14){% endif %};
       --topbar-bg: #ffffff;
-      --content-bg: #f4f6fb;
+      --content-bg: var(--pd-cream);
       --card-radius: 12px;
-      --accent: {% if campaign %}{{ campaign.brand_primary }}{% else %}#4f8ef7{% endif %};
-      --accent-dark: {% if campaign %}{{ campaign.brand_primary }}{% else %}#2563eb{% endif %};
+      --accent: {% if campaign %}{{ campaign.brand_primary }}{% else %}var(--pd-coral){% endif %};
+      --accent-dark: {% if campaign %}{{ campaign.brand_primary }}{% else %}var(--pd-coral-deep){% endif %};
       --success-color: #22c55e;
       --danger-color: #ef4444;
       --warning-color: #f59e0b;
@@ -25,7 +30,7 @@
 
     body {
       background: var(--content-bg);
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-family: var(--pd-font-body);
       min-height: 100vh;
     }
 
@@ -45,7 +50,7 @@
 
     .sidebar-brand {
       padding: 1.5rem 1.5rem 1rem;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
+      border-bottom: 1px solid var(--sidebar-border);
     }
 
     .sidebar-brand .brand-icon {
@@ -62,26 +67,30 @@
     }
 
     .sidebar-brand .brand-text {
-      font-size: 1.15rem;
-      font-weight: 700;
-      color: #ffffff;
-      letter-spacing: -0.3px;
+      font-family: var(--pd-font-display);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--sidebar-link-hover);
+      letter-spacing: -0.025em;
+      line-height: 1;
     }
 
     .sidebar-brand .brand-sub {
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       color: var(--sidebar-link);
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 1.4px;
+      margin-top: 4px;
     }
 
     .sidebar-section-label {
       font-size: 0.65rem;
       text-transform: uppercase;
       letter-spacing: 1.5px;
-      color: rgba(160, 174, 192, 0.5);
+      color: var(--sidebar-link);
+      opacity: 0.65;
       padding: 1.2rem 1.5rem 0.4rem;
-      font-weight: 600;
+      font-weight: 700;
     }
 
     .sidebar-nav {
@@ -103,13 +112,13 @@
 
     .sidebar-nav .nav-link:hover {
       color: var(--sidebar-link-hover);
-      background: rgba(255,255,255,0.06);
-      border-left-color: rgba(79, 142, 247, 0.5);
+      background: var(--sidebar-hover-bg);
+      border-left-color: var(--sidebar-hover-border);
     }
 
     .sidebar-nav .nav-link.active {
       color: var(--sidebar-link-hover);
-      background: rgba(79, 142, 247, 0.12);
+      background: var(--sidebar-active-bg);
       border-left-color: var(--accent);
       font-weight: 600;
     }
@@ -123,9 +132,9 @@
 
     .sidebar-footer {
       padding: 1rem 1.5rem;
-      border-top: 1px solid rgba(255,255,255,0.08);
+      border-top: 1px solid var(--sidebar-border);
       font-size: 0.78rem;
-      color: rgba(160,174,192,0.6);
+      color: var(--sidebar-link);
     }
 
     /* Main content */
@@ -176,12 +185,12 @@
     .user-badge .avatar {
       width: 28px;
       height: 28px;
-      background: var(--accent);
+      background: var(--pd-yellow);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #fff;
+      color: var(--pd-ink);
       font-size: 0.75rem;
       font-weight: 700;
     }
@@ -248,8 +257,10 @@
     }
 
     .stat-card .stat-value {
-      font-size: 2rem;
+      font-family: var(--pd-font-display);
+      font-size: 2.2rem;
       font-weight: 800;
+      letter-spacing: -0.02em;
       line-height: 1;
       margin-bottom: 0.25rem;
     }
@@ -262,11 +273,11 @@
       opacity: 0.7;
     }
 
-    .stat-card.blue { background: linear-gradient(135deg, #4f8ef7, #2563eb); color: #fff; }
-    .stat-card.green { background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff; }
-    .stat-card.purple { background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff; }
-    .stat-card.orange { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; }
-    .stat-card.teal { background: linear-gradient(135deg, #14b8a6, #0d9488); color: #fff; }
+    .stat-card.blue   { background: var(--pd-yellow); color: var(--pd-ink); }
+    .stat-card.green  { background: var(--pd-teal); color: #fff; }
+    .stat-card.purple { background: var(--pd-coral); color: #fff; }
+    .stat-card.orange { background: var(--pd-cream); color: var(--pd-ink); }
+    .stat-card.teal   { background: var(--pd-teal); color: #fff; }
 
     /* Tables */
     .table-card {
@@ -336,9 +347,12 @@
       border-color: var(--accent);
     }
 
-    .btn-primary:hover {
-      background: var(--accent-dark);
-      border-color: var(--accent-dark);
+    .btn-primary:hover,
+    .btn-primary:focus,
+    .btn-primary:active {
+      background: var(--accent-dark) !important;
+      border-color: var(--accent-dark) !important;
+      box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.25) !important;
     }
 
     /* Alerts / flash messages */
@@ -358,7 +372,7 @@
 
     .form-control:focus, .form-select:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(79, 142, 247, 0.15);
+      box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.18);
     }
 
     .form-label {
@@ -400,16 +414,18 @@
 <!-- Sidebar -->
 <nav id="sidebar">
   <div class="sidebar-brand">
-    <div class="d-flex align-items-center">
+    <div class="d-flex align-items-center" style="gap: 10px;">
       {% if campaign and campaign.logo %}
-        <span class="brand-icon" style="background:transparent; padding:0; overflow:hidden;">
+        <span class="brand-icon" style="background:transparent; padding:0; overflow:hidden; width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center;">
           <img src="{{ campaign.logo.url }}" alt="{{ campaign.brand_title }}" style="width:36px; height:36px; object-fit:contain; border-radius:8px;">
         </span>
       {% else %}
-        <span class="brand-icon"><i class="bi bi-ticket-perforated-fill"></i></span>
+        <svg width="36" height="36" viewBox="0 0 120 120" aria-hidden="true">
+          <use href="#pd-dodo"/>
+        </svg>
       {% endif %}
       <div>
-        <div class="brand-text">{% if campaign %}{{ campaign.brand_title }}{% else %}RaffleManager{% endif %}</div>
+        <div class="brand-text">{% if campaign %}{{ campaign.brand_title }}{% else %}Promo<span class="pd-hyphen">-</span>Domo{% endif %}</div>
         <div class="brand-sub">{% if campaign %}{% trans "Panel de Campaña" %}{% else %}{% trans "Plataforma de Campañas" %}{% endif %}</div>
       </div>
     </div>
