@@ -25,6 +25,7 @@ urlpatterns = [
     path('dashboard/campaign/<int:campaign_id>/submission/<int:submission_id>/validity/', views.submission_set_validity, name='submission_set_validity'),
     path('dashboard/campaign/<int:campaign_id>/prize/add/', views.prize_add, name='prize_add'),
     path('dashboard/campaign/<int:campaign_id>/prize/<int:prize_id>/edit/', views.prize_edit, name='prize_edit'),
+    path('dashboard/campaign/<int:campaign_id>/prize/<int:prize_id>/delete/', views.prize_delete, name='prize_delete'),
     path('dashboard/raffle/<int:raffle_id>/results/', views.raffle_results, name='raffle_results'),
     path('dashboard/raffle/<int:raffle_id>/export/', views.export_raffle_winners, name='export_winners'),
 ]

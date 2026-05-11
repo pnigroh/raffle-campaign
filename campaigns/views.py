@@ -387,3 +387,14 @@ def prize_edit(request, campaign_id, prize_id):
         errs = '; '.join(f"{k}: {', '.join(v)}" for k, v in form.errors.items())
         messages.error(request, f'No se pudo guardar el premio: {errs}')
     return redirect('campaign_detail', campaign_id=campaign.id)
+
+
+@login_required
+@require_POST
+def prize_delete(request, campaign_id, prize_id):
+    campaign = _get_managed_campaign_or_403(request.user, campaign_id)
+    prize = get_object_or_404(Prize, id=prize_id, campaign=campaign)
+    prize_name = prize.name
+    prize.delete()
+    messages.success(request, f'Premio "{prize_name}" borrado.')
+    return redirect('campaign_detail', campaign_id=campaign.id)
