@@ -1,211 +1,232 @@
-{% load i18n %}<!DOCTYPE html>
+{% load static %}{% load i18n %}<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% trans "Iniciar sesión" %} - RaffleManager</title>
+  <title>{% trans "Iniciar sesión" %} · Promo-Domo</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" crossorigin="anonymous">
+  {% include "campaigns/_brand_assets.html" %}
   <style>
     body {
-      background: linear-gradient(135deg, #1a2035 0%, #2d3a5e 50%, #1a2035 100%);
+      background: var(--pd-cream);
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-family: var(--pd-font-body);
+      padding: 24px;
     }
 
-    .login-wrapper {
+    .login-shell {
       width: 100%;
-      max-width: 420px;
-      padding: 1rem;
+      max-width: 880px;
+      background: #fff;
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: 0 30px 80px rgba(31, 41, 55, 0.18);
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      min-height: 480px;
     }
 
-    .login-brand {
-      text-align: center;
-      margin-bottom: 2rem;
+    @media (max-width: 760px) {
+      .login-shell { grid-template-columns: 1fr; min-height: 0; }
     }
 
-    .login-brand .brand-icon {
-      width: 64px;
-      height: 64px;
-      background: #4f8ef7;
-      border-radius: 16px;
-      display: inline-flex;
+    .login-art {
+      background: var(--pd-yellow);
+      padding: 40px 32px;
+      display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-size: 2rem;
-      color: #fff;
-      margin-bottom: 1rem;
-      box-shadow: 0 8px 24px rgba(79, 142, 247, 0.4);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
     }
 
-    .login-brand h1 {
-      color: #ffffff;
-      font-size: 1.75rem;
+    .login-art::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 25% 25%, rgba(255,255,255,0.35), transparent 45%),
+        radial-gradient(circle at 75% 80%, rgba(20, 184, 166, 0.18), transparent 50%);
+      pointer-events: none;
+    }
+
+    .login-art > * { position: relative; }
+
+    .login-art .name-stacked {
+      font-family: var(--pd-font-display);
       font-weight: 800;
-      margin-bottom: 0.25rem;
+      font-size: 2rem;
+      color: var(--pd-ink);
+      letter-spacing: -0.025em;
+      margin: 14px 0 0;
+      line-height: 1;
     }
 
-    .login-brand p {
-      color: rgba(255,255,255,0.5);
+    .login-art .tagline {
+      font-family: var(--pd-font-display);
+      font-style: italic;
+      font-size: 1.05rem;
+      color: var(--pd-ink);
+      margin-top: 18px;
+      max-width: 240px;
+      line-height: 1.4;
+    }
+
+    .login-form {
+      padding: 44px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 14px;
+    }
+
+    .login-form h2 {
+      font-family: var(--pd-font-display);
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--pd-ink);
+      margin: 0 0 4px;
+      letter-spacing: -0.02em;
+    }
+
+    .login-form .lead {
       font-size: 0.9rem;
-    }
-
-    .login-card {
-      background: #ffffff;
-      border-radius: 16px;
-      padding: 2rem;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    }
-
-    .login-card h2 {
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: #1a2035;
-      margin-bottom: 0.25rem;
-    }
-
-    .login-card .subtitle {
-      font-size: 0.85rem;
-      color: #94a3b8;
-      margin-bottom: 1.5rem;
+      color: var(--pd-ink-soft);
+      margin: 0 0 12px;
     }
 
     .form-floating label {
-      color: #94a3b8;
+      color: var(--pd-ink-soft);
       font-size: 0.9rem;
     }
 
     .form-floating .form-control {
       border-radius: 10px;
-      border: 1.5px solid #e2e8f0;
+      border: 1.5px solid #E5E7EB;
       padding-top: 1.6rem;
     }
 
     .form-floating .form-control:focus {
-      border-color: #4f8ef7;
-      box-shadow: 0 0 0 3px rgba(79, 142, 247, 0.15);
+      border-color: var(--pd-coral);
+      box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.18);
     }
 
     .btn-login {
-      background: linear-gradient(135deg, #4f8ef7, #2563eb);
-      border: none;
+      background: var(--pd-coral);
+      border: 0;
       border-radius: 10px;
-      padding: 0.75rem;
+      padding: 0.85rem;
       font-size: 1rem;
-      font-weight: 600;
+      font-weight: 700;
       width: 100%;
       color: #fff;
-      transition: all 0.2s;
-      box-shadow: 0 4px 12px rgba(79, 142, 247, 0.3);
+      transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+      margin-top: 6px;
     }
 
     .btn-login:hover {
+      background: var(--pd-coral-deep);
       transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(79, 142, 247, 0.4);
-      background: linear-gradient(135deg, #3b7de8, #1d4ed8);
+      box-shadow: 0 8px 20px rgba(251, 113, 133, 0.35);
       color: #fff;
     }
 
-    .alert {
-      border-radius: 10px;
-      font-size: 0.875rem;
-      border: none;
-    }
-
     .error-list {
-      background: #fef2f2;
+      background: #FEF2F2;
       border-radius: 10px;
       padding: 0.75rem 1rem;
       margin-bottom: 1rem;
-      border-left: 3px solid #ef4444;
+      border-left: 3px solid #EF4444;
     }
 
     .error-list p {
-      color: #dc2626;
+      color: #DC2626;
       font-size: 0.875rem;
       margin: 0;
     }
 
     .login-footer {
+      grid-column: 1 / -1;
       text-align: center;
-      margin-top: 1.5rem;
-      font-size: 0.78rem;
-      color: rgba(255,255,255,0.35);
+      padding: 14px;
+      font-size: 0.75rem;
+      color: var(--pd-ink-soft);
+      background: var(--pd-cream-soft);
+      border-top: 1px solid var(--pd-line);
     }
   </style>
 </head>
 <body>
-  <div class="login-wrapper">
-    <div class="login-brand">
-      <div class="brand-icon">
-        <i class="bi bi-ticket-perforated-fill"></i>
-      </div>
-      <h1>RaffleManager</h1>
-      <p>{% trans "Plataforma de Gestión de Campañas" %}</p>
-    </div>
 
-    <div class="login-card">
-      <h2>{% trans "Bienvenido de nuevo" %}</h2>
-      <p class="subtitle">{% trans "Inicia sesión para gestionar tus campañas" %}</p>
+<div class="login-shell">
 
-      {% if form.errors %}
-        <div class="error-list">
-          <p><i class="bi bi-exclamation-circle-fill me-1"></i>
-            {% trans "Usuario o contraseña incorrectos. Inténtalo de nuevo." %}
-          </p>
-        </div>
-      {% endif %}
-
-      <form method="post">
-        {% csrf_token %}
-        <div class="mb-3">
-          <div class="form-floating">
-            <input
-              type="text"
-              name="username"
-              id="id_username"
-              class="form-control {% if form.username.errors %}is-invalid{% endif %}"
-              placeholder="{% trans "Usuario" %}"
-              autocomplete="username"
-              autofocus
-              value="{{ form.username.value|default:'' }}"
-            >
-            <label for="id_username"><i class="bi bi-person me-1"></i>{% trans "Usuario" %}</label>
-          </div>
-        </div>
-
-        <div class="mb-4">
-          <div class="form-floating">
-            <input
-              type="password"
-              name="password"
-              id="id_password"
-              class="form-control {% if form.password.errors %}is-invalid{% endif %}"
-              placeholder="{% trans "Contraseña" %}"
-              autocomplete="current-password"
-            >
-            <label for="id_password"><i class="bi bi-lock me-1"></i>{% trans "Contraseña" %}</label>
-          </div>
-        </div>
-
-        {% if next %}
-          <input type="hidden" name="next" value="{{ next }}">
-        {% endif %}
-
-        <button type="submit" class="btn btn-login">
-          <i class="bi bi-box-arrow-in-right me-2"></i>{% trans "Iniciar sesión" %}
-        </button>
-      </form>
-    </div>
-
-    <div class="login-footer">
-      &copy; RaffleManager &mdash; {% trans "Acceso Admin Seguro" %}
-    </div>
+  <div class="login-art">
+    <svg width="120" height="120" viewBox="0 0 120 120" aria-hidden="true">
+      <use href="#pd-dodo"/>
+    </svg>
+    <div class="name-stacked">Promo<span class="pd-hyphen">-</span>Domo</div>
+    <p class="tagline">{% trans "Sorteos encantadores que tu audiencia querrá disfrutar." %}</p>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <form method="post" class="login-form">
+    {% csrf_token %}
+    <h2>{% trans "Bienvenido de nuevo" %}</h2>
+    <p class="lead">{% trans "Inicia sesión para gestionar tus campañas" %}</p>
+
+    {% if form.errors %}
+      <div class="error-list">
+        <p><i class="bi bi-exclamation-circle-fill me-1"></i>
+          {% trans "Usuario o contraseña incorrectos. Inténtalo de nuevo." %}
+        </p>
+      </div>
+    {% endif %}
+
+    <div class="form-floating mb-2">
+      <input
+        type="text"
+        name="username"
+        id="id_username"
+        class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+        placeholder="{% trans "Usuario" %}"
+        autocomplete="username"
+        autofocus
+        value="{{ form.username.value|default:'' }}"
+      >
+      <label for="id_username"><i class="bi bi-person me-1"></i>{% trans "Usuario" %}</label>
+    </div>
+
+    <div class="form-floating mb-2">
+      <input
+        type="password"
+        name="password"
+        id="id_password"
+        class="form-control {% if form.password.errors %}is-invalid{% endif %}"
+        placeholder="{% trans "Contraseña" %}"
+        autocomplete="current-password"
+      >
+      <label for="id_password"><i class="bi bi-lock me-1"></i>{% trans "Contraseña" %}</label>
+    </div>
+
+    {% if next %}
+      <input type="hidden" name="next" value="{{ next }}">
+    {% endif %}
+
+    <button type="submit" class="btn-login">
+      <i class="bi bi-box-arrow-in-right me-2"></i>{% trans "Iniciar sesión" %}
+    </button>
+  </form>
+
+  <div class="login-footer">
+    &copy; Promo-Domo &mdash; {% trans "Acceso Admin Seguro" %}
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
 </body>
 </html>
