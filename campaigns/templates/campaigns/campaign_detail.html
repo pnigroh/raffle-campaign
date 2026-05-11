@@ -124,16 +124,40 @@
 <div class="card mb-4">
   <div class="card-header d-flex align-items-center justify-content-between">
     <span><i class="bi bi-trophy me-2 text-warning"></i>{% trans "Premios" %}</span>
-    <a href="/admin/campaigns/prize/?campaign__id__exact={{ campaign.id }}" class="btn btn-sm btn-outline-secondary">
-      <i class="bi bi-pencil me-1"></i>{% trans "Editar Premios" %}
-    </a>
+    <button type="button" class="btn btn-sm btn-primary"
+            data-bs-toggle="modal" data-bs-target="#prizeModal"
+            data-prize-action="add"
+            data-prize-action-url="{% url 'prize_add' campaign.id %}"
+            data-next-order="{{ next_prize_order }}">
+      <i class="bi bi-plus-lg me-1"></i>{% trans "Añadir Premio" %}
+    </button>
   </div>
   <div class="card-body py-2">
     <div class="row g-2">
       {% for prize in prizes %}
       <div class="col-md-4 col-lg-3">
-        <div class="p-3 rounded-3 border" style="background:#fafbff;">
-          <div class="fw-semibold text-dark">{{ prize.name }}</div>
+        <div class="p-3 rounded-3 border position-relative" style="background:#fafbff;">
+          <div class="position-absolute top-0 end-0 p-2 d-flex gap-1">
+            <button type="button" class="btn btn-sm btn-link p-0 text-secondary" title="{% trans 'Editar' %}"
+                    data-bs-toggle="modal" data-bs-target="#prizeModal"
+                    data-prize-action="edit"
+                    data-prize-action-url="{% url 'prize_edit' campaign.id prize.id %}"
+                    data-prize-id="{{ prize.id }}"
+                    data-prize-name="{{ prize.name }}"
+                    data-prize-description="{{ prize.description }}"
+                    data-prize-quantity="{{ prize.quantity }}"
+                    data-prize-order="{{ prize.order }}">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-link p-0 text-danger" title="{% trans 'Borrar' %}"
+                    data-bs-toggle="modal" data-bs-target="#prizeDeleteModal"
+                    data-prize-id="{{ prize.id }}"
+                    data-prize-name="{{ prize.name }}"
+                    data-prize-action-url="{% url 'prize_delete' campaign.id prize.id %}">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+          <div class="fw-semibold text-dark pe-5">{{ prize.name }}</div>
           {% if prize.description %}
             <div class="text-muted-sm mt-1">{{ prize.description }}</div>
           {% endif %}
@@ -151,7 +175,11 @@
 <div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
   <i class="bi bi-exclamation-triangle-fill"></i>
   <span>{% trans "No hay premios configurados para esta campaña." %}
-    <a href="/admin/campaigns/prize/add/?campaign={{ campaign.id }}" class="alert-link">{% trans "Agrega premios" %}</a>
+    <a href="#" class="alert-link"
+       data-bs-toggle="modal" data-bs-target="#prizeModal"
+       data-prize-action="add"
+       data-prize-action-url="{% url 'prize_add' campaign.id %}"
+       data-next-order="{{ next_prize_order }}">{% trans "Agrega premios" %}</a>
     {% trans "antes de realizar un sorteo." %}
   </span>
 </div>

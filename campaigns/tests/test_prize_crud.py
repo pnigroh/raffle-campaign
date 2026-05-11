@@ -293,3 +293,21 @@ class PrizeModalRenderTests(TestCase):
         body = resp.content.decode()
         self.assertIn('id="prizeModal"', body)
         self.assertIn('id="prizeDeleteModal"', body)
+
+    def test_existing_prize_card_has_edit_and_delete_triggers(self):
+        prize = Prize.objects.create(
+            campaign=self.camp_x, name="Trigger test", quantity=2, order=10
+        )
+        self.client.force_login(self.alice)
+        resp = self.client.get(reverse("campaign_detail", args=[self.camp_x.id]))
+        body = resp.content.decode()
+        self.assertIn(f'data-prize-id="{prize.id}"', body)
+        self.assertIn('data-prize-action="edit"', body)
+        self.assertIn('data-bs-target="#prizeModal"', body)
+        self.assertIn('data-bs-target="#prizeDeleteModal"', body)
+
+    def test_card_header_has_add_prize_trigger(self):
+        self.client.force_login(self.alice)
+        resp = self.client.get(reverse("campaign_detail", args=[self.camp_x.id]))
+        body = resp.content.decode()
+        self.assertIn('data-prize-action="add"', body)
