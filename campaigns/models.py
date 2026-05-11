@@ -47,11 +47,32 @@ class Campaign(models.Model):
 
     @property
     def brand_primary(self):
-        return self.primary_color or '#4f8ef7'
+        # Default to Promo-Domo coral when the admin hasn't picked a custom color.
+        return self.primary_color or '#FB7185'
 
     @property
     def brand_sidebar(self):
-        return self.sidebar_color or '#1a2035'
+        # Default to Promo-Domo cream-soft when the admin hasn't picked a custom color.
+        return self.sidebar_color or '#FFFBEB'
+
+    @property
+    def needs_dark_text(self):
+        """True when the effective sidebar color is light enough that dark
+        (ink) text reads better than white. Falls back to True for unset or
+        malformed colors so the cream Promo-Domo default gets ink text.
+        Threshold of 0.55 perceived luminance (rec. 601 weights).
+        """
+        color = (self.sidebar_color or '').strip()
+        if len(color) != 7 or not color.startswith('#'):
+            return True
+        try:
+            r = int(color[1:3], 16)
+            g = int(color[3:5], 16)
+            b = int(color[5:7], 16)
+        except ValueError:
+            return True
+        luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+        return luminance > 0.55
 
     managers = models.ManyToManyField(
         User, blank=True, related_name='managed_campaigns',

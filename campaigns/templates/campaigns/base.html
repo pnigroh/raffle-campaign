@@ -11,13 +11,14 @@
     :root {
       --sidebar-bg: {% if campaign %}{{ campaign.brand_sidebar }}{% else %}var(--pd-cream-soft){% endif %};
       --sidebar-width: 260px;
-      --sidebar-link: {% if campaign %}#a0aec0{% else %}var(--pd-ink-soft){% endif %};
-      --sidebar-link-hover: {% if campaign %}#ffffff{% else %}var(--pd-ink){% endif %};
+      {# Sidebar text + decoration colors flip to "dark-mode" only when the campaign's sidebar color is dark enough that white text reads better. #}
+      --sidebar-link: {% if campaign and not campaign.needs_dark_text %}#a0aec0{% else %}var(--pd-ink-soft){% endif %};
+      --sidebar-link-hover: {% if campaign and not campaign.needs_dark_text %}#ffffff{% else %}var(--pd-ink){% endif %};
       --sidebar-active: {% if campaign %}{{ campaign.brand_primary }}{% else %}var(--pd-coral){% endif %};
-      --sidebar-border: {% if campaign %}rgba(255,255,255,0.08){% else %}var(--pd-line){% endif %};
-      --sidebar-hover-bg: {% if campaign %}rgba(255,255,255,0.06){% else %}rgba(251,113,133,0.08){% endif %};
-      --sidebar-hover-border: {% if campaign %}rgba(160,174,192,0.5){% else %}rgba(251,113,133,0.5){% endif %};
-      --sidebar-active-bg: {% if campaign %}rgba(79,142,247,0.18){% else %}rgba(251,113,133,0.14){% endif %};
+      --sidebar-border: {% if campaign and not campaign.needs_dark_text %}rgba(255,255,255,0.08){% else %}var(--pd-line){% endif %};
+      --sidebar-hover-bg: {% if campaign and not campaign.needs_dark_text %}rgba(255,255,255,0.06){% else %}rgba(251,113,133,0.08){% endif %};
+      --sidebar-hover-border: {% if campaign and not campaign.needs_dark_text %}rgba(160,174,192,0.5){% else %}rgba(251,113,133,0.5){% endif %};
+      --sidebar-active-bg: {% if campaign and not campaign.needs_dark_text %}rgba(255,255,255,0.18){% else %}rgba(251,113,133,0.14){% endif %};
       --topbar-bg: #ffffff;
       --content-bg: var(--pd-cream);
       --card-radius: 12px;
