@@ -1,0 +1,64 @@
+{% load i18n %}
+
+{# === Add / Edit prize modal === #}
+<div class="modal fade" id="prizeModal" tabindex="-1" aria-labelledby="prizeModalTitle" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="prizeForm" method="post" action="">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title pd-display" id="prizeModalTitle">{% trans "Premio" %}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Cerrar' %}"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label" for="prizeForm_name">{% trans "Nombre" %}</label>
+            <input type="text" name="name" id="prizeForm_name" class="form-control" maxlength="200" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="prizeForm_description">{% trans "Descripción" %}</label>
+            <textarea name="description" id="prizeForm_description" class="form-control" rows="3"></textarea>
+          </div>
+          <div class="row g-3">
+            <div class="col-6">
+              <label class="form-label" for="prizeForm_quantity">{% trans "Cantidad" %}</label>
+              <input type="number" name="quantity" id="prizeForm_quantity" class="form-control" min="1" value="1" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label" for="prizeForm_order">{% trans "Orden" %}</label>
+              <input type="number" name="order" id="prizeForm_order" class="form-control" min="0" value="0" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans "Cancelar" %}</button>
+          <button type="submit" class="btn btn-primary">{% trans "Guardar" %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{# === Delete confirmation modal === #}
+<div class="modal fade" id="prizeDeleteModal" tabindex="-1" aria-labelledby="prizeDeleteModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <form id="prizeDeleteForm" method="post" action="">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title pd-display" id="prizeDeleteModalTitle">{% trans "Borrar premio" %}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Cerrar' %}"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">
+            {% blocktrans with name='<strong id="prizeDeleteName"></strong>' %}¿Borrar el premio {{ name }}? Esta acción no se puede deshacer.{% endblocktrans %}
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans "Cancelar" %}</button>
+          <button type="submit" class="btn btn-danger">{% trans "Borrar" %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

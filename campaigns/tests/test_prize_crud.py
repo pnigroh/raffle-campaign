@@ -278,3 +278,18 @@ class PrizeMiscTests(TestCase):
         Prize.objects.create(campaign=self.camp_x, name="B", quantity=1, order=15)
         resp = self.client.get(reverse("campaign_detail", args=[self.camp_x.id]))
         self.assertEqual(resp.context["next_prize_order"], 25)
+
+
+class PrizeModalRenderTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.alice = User.objects.create_user("alice", password="pw", is_staff=True)
+        cls.camp_x = _campaign("Campaign X", "camp-x", manager=cls.alice)
+
+    def test_prize_modals_present_in_campaign_detail(self):
+        self.client.force_login(self.alice)
+        resp = self.client.get(reverse("campaign_detail", args=[self.camp_x.id]))
+        self.assertEqual(resp.status_code, 200)
+        body = resp.content.decode()
+        self.assertIn('id="prizeModal"', body)
+        self.assertIn('id="prizeDeleteModal"', body)
