@@ -1,0 +1,37 @@
+{% load static %}
+
+{# Brand stylesheet (loads Google Fonts + tokens) #}
+<link rel="stylesheet" href="{% static 'css/brand.css' %}">
+
+{# Favicon — modern browsers use SVG, others fall back to nothing (acceptable) #}
+<link rel="icon" type="image/svg+xml" href="{% static 'brand/favicon.svg' %}">
+<link rel="apple-touch-icon" href="{% static 'brand/favicon.svg' %}">
+
+{# Inline SVG <symbol> defs — reference with <svg><use href="#pd-dodo"/></svg> #}
+<svg xmlns="http://www.w3.org/2000/svg" class="pd-svg-defs" aria-hidden="true">
+  <defs>
+    <symbol id="pd-dodo" viewBox="0 0 120 120">
+      <ellipse cx="60" cy="112" rx="32" ry="3" fill="#1F2937" opacity=".15"/>
+      <ellipse cx="58" cy="80" rx="32" ry="26" fill="#374151"/>
+      <ellipse cx="58" cy="86" rx="22" ry="16" fill="#6B7280"/>
+      <path d="M40 70 Q 30 78 36 92 Q 46 92 50 80 Z" fill="#1F2937"/>
+      <path d="M28 62 Q 18 56 16 48 Q 24 50 30 58 Z" fill="#FCD34D"/>
+      <path d="M26 70 Q 12 70 10 62 Q 22 60 28 66 Z" fill="#FB7185"/>
+      <path d="M28 78 Q 14 82 14 74 Q 22 70 30 74 Z" fill="#14B8A6"/>
+      <rect x="50" y="102" width="5" height="10" fill="#FB7185"/>
+      <rect x="66" y="102" width="5" height="10" fill="#FB7185"/>
+      <path d="M46 112 L 58 112 L 56 114 L 48 114 Z" fill="#FB7185"/>
+      <path d="M62 112 L 74 112 L 72 114 L 64 114 Z" fill="#FB7185"/>
+      <ellipse cx="80" cy="50" rx="20" ry="22" fill="#374151"/>
+      <circle cx="76" cy="30" r="3" fill="#FCD34D"/>
+      <circle cx="82" cy="28" r="3" fill="#FCD34D"/>
+      <circle cx="88" cy="32" r="2.5" fill="#FCD34D"/>
+      <path d="M79 47 Q 84 41 89 47" stroke="#1F2937" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      <path d="M80 44 Q 84 40 88 44" stroke="#1F2937" stroke-width="1" fill="none" stroke-linecap="round" opacity=".4"/>
+      <ellipse cx="74" cy="58" rx="5.5" ry="3" fill="#FB7185" opacity=".7"/>
+      <path d="M96 49 Q 118 50 113 68 Q 104 71 92 60 Z" fill="#FCD34D" stroke="#1F2937" stroke-width="1.5"/>
+      <path d="M91 61 Q 96 67 101 61" stroke="#1F2937" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      <circle cx="106" cy="55" r="0.8" fill="#1F2937"/>
+    </symbol>
+  </defs>
+</svg>
