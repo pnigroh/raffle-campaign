@@ -396,3 +396,48 @@
 {# Prize CRUD modals (templates/campaigns/_prize_modals.html) #}
 {% include "campaigns/_prize_modals.html" %}
 {% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const prizeModal = document.getElementById('prizeModal');
+  const prizeForm = document.getElementById('prizeForm');
+  const prizeTitle = document.getElementById('prizeModalTitle');
+
+  if (prizeModal && prizeForm) {
+    prizeModal.addEventListener('show.bs.modal', (e) => {
+      const trigger = e.relatedTarget;
+      if (!trigger) return;
+      const action = trigger.dataset.prizeAction;
+      prizeForm.action = trigger.dataset.prizeActionUrl || '';
+      if (action === 'edit') {
+        prizeTitle.textContent = 'Editar Premio';
+        prizeForm.elements['name'].value = trigger.dataset.prizeName || '';
+        prizeForm.elements['description'].value = trigger.dataset.prizeDescription || '';
+        prizeForm.elements['quantity'].value = trigger.dataset.prizeQuantity || '1';
+        prizeForm.elements['order'].value = trigger.dataset.prizeOrder || '0';
+      } else {
+        prizeTitle.textContent = 'Añadir Premio';
+        prizeForm.elements['name'].value = '';
+        prizeForm.elements['description'].value = '';
+        prizeForm.elements['quantity'].value = '1';
+        prizeForm.elements['order'].value = trigger.dataset.nextOrder || '0';
+      }
+    });
+  }
+
+  const prizeDeleteModal = document.getElementById('prizeDeleteModal');
+  const prizeDeleteForm = document.getElementById('prizeDeleteForm');
+  const prizeDeleteName = document.getElementById('prizeDeleteName');
+
+  if (prizeDeleteModal && prizeDeleteForm) {
+    prizeDeleteModal.addEventListener('show.bs.modal', (e) => {
+      const trigger = e.relatedTarget;
+      if (!trigger) return;
+      prizeDeleteForm.action = trigger.dataset.prizeActionUrl || '';
+      prizeDeleteName.textContent = trigger.dataset.prizeName || '';
+    });
+  }
+})();
+</script>
+{% endblock %}
