@@ -104,8 +104,36 @@
             </div>
           </div>
 
+          <!-- Search & Store Filters -->
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="{{ segment_form.search.id_for_label }}">{% trans "Buscar" %}</label>
+              {{ segment_form.search }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="{{ segment_form.store.id_for_label }}">{% trans "Tienda" %}</label>
+              {{ segment_form.store }}
+            </div>
+          </div>
+          <div class="row g-3 mt-1">
+            <div class="col-12">
+              <div class="form-check">
+                {{ segment_form.include_already_participated }}
+                <label class="form-check-label" for="{{ segment_form.include_already_participated.id_for_label }}">
+                  {% trans "Incluir participantes que ya han participado" %}
+                </label>
+              </div>
+              <div class="form-check">
+                {{ segment_form.consume_pool }}
+                <label class="form-check-label" for="{{ segment_form.consume_pool.id_for_label }}">
+                  {% trans "Marcar participantes como \"ya participaron\" después del sorteo" %}
+                </label>
+              </div>
+            </div>
+          </div>
+
           <!-- Notes -->
-          <div class="mb-0">
+          <div class="mb-0 mt-3">
             <label class="form-label">{% trans "Notas del Sorteo" %} <span class="text-muted fw-normal">({% trans "opcional" %})</span></label>
             <textarea
               name="notes"

@@ -599,3 +599,49 @@ class CampaignDetailParticipationUITests(TestCase):
         resp = self.client.get(reverse("campaign_detail", args=[self.campaign.id]))
         body = resp.content.decode()
         self.assertIn('id="restoreEligibilityModal"', body)
+
+
+class RaffleHistoryAuditButtonTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.alice = User.objects.create_user("alice", password="pw", is_staff=True)
+        cls.campaign = _campaign(manager=cls.alice)
+        cls.subs = [
+            _submission(cls.campaign, first_name=f"S{i}", email=f"s{i}@example.com")
+            for i in range(3)
+        ]
+        cls.prize = Prize.objects.create(campaign=cls.campaign, name="P", quantity=1)
+
+    def test_raffle_history_row_has_audit_button(self):
+        from campaigns.utils import conduct_raffle
+        from django.urls import reverse
+        raffle = conduct_raffle(
+            campaign=self.campaign,
+            prizes_with_quantities=[(self.prize, 1)],
+            submission_qs=self.campaign.submissions.all(),
+            conducted_by=self.alice,
+            consume_pool=False,
+        )
+        self.client.force_login(self.alice)
+        resp = self.client.get(reverse("campaign_detail", args=[self.campaign.id]))
+        body = resp.content.decode()
+        audit_url = reverse("raffle_audit", args=[raffle.id])
+        self.assertIn(audit_url, body)
+
+
+class RafflePageNewFieldsTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.alice = User.objects.create_user("alice", password="pw", is_staff=True)
+        cls.campaign = _campaign(manager=cls.alice)
+        Prize.objects.create(campaign=cls.campaign, name="P", quantity=1)
+
+    def test_raffle_page_renders_new_filter_fields(self):
+        from django.urls import reverse
+        self.client.force_login(self.alice)
+        resp = self.client.get(reverse("raffle", args=[self.campaign.id]))
+        self.assertEqual(resp.status_code, 200)
+        body = resp.content.decode()
+        for name in ['name="search"', 'name="store"',
+                     'name="include_already_participated"', 'name="consume_pool"']:
+            self.assertIn(name, body)

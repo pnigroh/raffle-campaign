@@ -400,6 +400,9 @@
               <a href="{% url 'export_winners' raffle.id %}" class="btn btn-sm btn-outline-success">
                 <i class="bi bi-download"></i>
               </a>
+              <a href="{% url 'raffle_audit' raffle.id %}" class="btn btn-sm btn-outline-secondary ms-1" title="{% trans 'Ver auditoría' %}">
+                <i class="bi bi-shield-check me-1"></i>{% trans "Auditoría" %}
+              </a>
             </div>
           </td>
         </tr>
