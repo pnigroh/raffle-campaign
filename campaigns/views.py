@@ -275,6 +275,7 @@ def raffle_view(request, campaign_id):
             segment_data = dict(segment_form.cleaned_data)
             # Persist the store id (FK object isn't JSON-serializable downstream)
             segment_data['store_id'] = store.id if store else None
+            segment_data.pop('store', None)  # drop the unserializable Store object
             raffle = conduct_raffle(
                 campaign=campaign,
                 prizes_with_quantities=prizes_with_quantities,
