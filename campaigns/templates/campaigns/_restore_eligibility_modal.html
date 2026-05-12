@@ -1,0 +1,42 @@
+{% load i18n %}
+
+<div class="modal fade" id="restoreEligibilityModal" tabindex="-1" role="dialog"
+     aria-labelledby="restoreEligibilityModalTitle" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="restoreEligibilityForm" method="post" action="#">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title pd-display" id="restoreEligibilityModalTitle">
+            {% trans "Restaurar elegibilidad" %}
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"
+                  aria-label="{% trans 'Cerrar' %}"></button>
+        </div>
+        <div class="modal-body">
+          <p>
+            {% blocktrans with name='<strong id="restoreEligibilitySubmissionName"></strong>' %}
+            ¿Restaurar la elegibilidad de {{ name }}?
+            {% endblocktrans %}
+          </p>
+          <p class="text-muted small">
+            {% trans "Esto permite que vuelvan a participar en futuros sorteos. La acción se registra con quién, cuándo y por qué." %}
+          </p>
+          <div class="mb-3">
+            <label for="restoreEligibilityReason" class="form-label">
+              {% trans "Razón (obligatoria)" %}
+            </label>
+            <input type="text" name="reason" id="restoreEligibilityReason"
+                   class="form-control" maxlength="200" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            {% trans "Cancelar" %}
+          </button>
+          <button type="submit" class="btn btn-primary">{% trans "Restaurar" %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

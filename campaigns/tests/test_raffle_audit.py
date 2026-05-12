@@ -559,3 +559,43 @@ class RaffleAuditJsonTests(TestCase):
         resp = self.client.get(reverse("raffle_audit_json", args=[raffle.id]))
         self.assertIn('attachment', resp.get('Content-Disposition', ''))
         self.assertIn(f'raffle-{raffle.id}-audit.json', resp.get('Content-Disposition', ''))
+
+
+class CampaignDetailParticipationUITests(TestCase):
+    """The submissions table in campaign_detail.html shows an Estado column
+    and exposes the restore-eligibility modal for already-participated rows."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.alice = User.objects.create_user("alice", password="pw", is_staff=True)
+        cls.campaign = _campaign(manager=cls.alice)
+        cls.eligible = _submission(cls.campaign, first_name="Eligible", email="e@x.com")
+        cls.participated = _submission(cls.campaign, first_name="Participated", email="p@x.com")
+        Submission.objects.filter(id=cls.participated.id).update(
+            participated_at=timezone.now()
+        )
+
+    def test_participated_submission_shows_status_badge(self):
+        from django.urls import reverse
+        self.client.force_login(self.alice)
+        resp = self.client.get(reverse("campaign_detail", args=[self.campaign.id]))
+        body = resp.content.decode()
+        # Eligible row uses the eligible badge
+        self.assertIn("Elegible", body)
+        # Participated row uses the participated badge
+        self.assertIn("Ya participó", body)
+
+    def test_participated_row_has_restore_trigger(self):
+        from django.urls import reverse
+        self.client.force_login(self.alice)
+        resp = self.client.get(reverse("campaign_detail", args=[self.campaign.id]))
+        body = resp.content.decode()
+        self.assertIn(f'data-submission-id="{self.participated.id}"', body)
+        self.assertIn('data-bs-target="#restoreEligibilityModal"', body)
+
+    def test_restore_modal_present_in_campaign_detail(self):
+        from django.urls import reverse
+        self.client.force_login(self.alice)
+        resp = self.client.get(reverse("campaign_detail", args=[self.campaign.id]))
+        body = resp.content.decode()
+        self.assertIn('id="restoreEligibilityModal"', body)

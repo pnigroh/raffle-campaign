@@ -252,6 +252,7 @@
           <th>{% trans "Teléfono" %}</th>
           <th>{% trans "Foto" %}</th>
           <th>{% trans "Validez" %}</th>
+          <th>{% trans "Estado" %}</th>
           <th>{% trans "Código" %}</th>
           <th>{% trans "Enviado" %}</th>
           <th>{% trans "Acciones" %}</th>
@@ -285,6 +286,26 @@
             {% endif %}
           </td>
           <td>
+            {% if sub.participated_at %}
+              <span class="badge bg-warning text-dark" title="{{ sub.participated_at|date:'d/m/Y H:i' }}">
+                <i class="bi bi-check2-square me-1"></i>{% trans "Ya participó" %}
+              </span>
+              <button type="button" class="btn btn-sm btn-link p-0 ms-2"
+                      title="{% trans 'Restaurar elegibilidad' %}"
+                      aria-label="{% trans 'Restaurar elegibilidad' %}"
+                      data-bs-toggle="modal" data-bs-target="#restoreEligibilityModal"
+                      data-submission-id="{{ sub.id }}"
+                      data-submission-name="{{ sub.full_name }}"
+                      data-action-url="{% url 'submission_restore_eligibility' campaign.id sub.id %}">
+                <i class="bi bi-arrow-counterclockwise"></i>
+              </button>
+            {% else %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle">
+                <i class="bi bi-check-circle me-1"></i>{% trans "Elegible" %}
+              </span>
+            {% endif %}
+          </td>
+          <td>
             {% if sub.submission_code %}
               <code class="small">{{ sub.submission_code.code }}</code>
             {% else %}
@@ -313,7 +334,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="9" class="text-center py-5 text-muted">
+          <td colspan="10" class="text-center py-5 text-muted">
             <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
             {% if state_filter or county_filter or search %}
               {% trans "No se encontraron participaciones con los filtros aplicados." %}
@@ -397,6 +418,7 @@
 
 {# Prize CRUD modals (templates/campaigns/_prize_modals.html) #}
 {% include "campaigns/_prize_modals.html" %}
+{% include "campaigns/_restore_eligibility_modal.html" %}
 {% endblock %}
 
 {% block extra_js %}
@@ -438,6 +460,22 @@
       if (!trigger) return;
       prizeDeleteForm.action = trigger.dataset.prizeActionUrl || '';
       prizeDeleteName.textContent = trigger.dataset.prizeName || '';
+    });
+  }
+
+  // --- Restore eligibility modal wiring ---
+  const restoreModal = document.getElementById('restoreEligibilityModal');
+  const restoreForm = document.getElementById('restoreEligibilityForm');
+  const restoreName = document.getElementById('restoreEligibilitySubmissionName');
+  const restoreReason = document.getElementById('restoreEligibilityReason');
+
+  if (restoreModal && restoreForm && restoreName && restoreReason) {
+    restoreModal.addEventListener('show.bs.modal', (e) => {
+      const trigger = e.relatedTarget;
+      if (!trigger) return;
+      restoreForm.action = trigger.dataset.actionUrl || '';
+      restoreName.textContent = trigger.dataset.submissionName || '';
+      restoreReason.value = '';
     });
   }
 })();
