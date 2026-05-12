@@ -118,6 +118,13 @@
 
       .welcome .welcome-spacer { display: none; }
 
+      /* Reset .welcome's position:relative (set by mobile CSS) so the
+         absolutely-positioned logo below anchors to .stage, not to the
+         right-side .welcome column. */
+      .welcome {
+        position: static;
+      }
+
       /* Anchor the logo to the top-left of the viewport, over the bike */
       .welcome-logo {
         position: absolute;
