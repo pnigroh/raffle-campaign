@@ -10,7 +10,8 @@
     @font-face {
       font-family: 'Andreas';
       src: url("{% static 'campaigns/fonts/Andreas.ttf' %}") format('truetype');
-      font-weight: 400 900;
+      font-weight: normal;
+      font-style: normal;
       font-display: swap;
     }
 
@@ -97,6 +98,7 @@
         margin: 0;
         padding: 0;
         display: flex;
+        flex-direction: row;
         align-items: center;
         justify-content: flex-end;
       }
