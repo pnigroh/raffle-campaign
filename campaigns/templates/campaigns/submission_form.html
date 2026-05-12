@@ -118,9 +118,13 @@
 
       .welcome .welcome-spacer { display: none; }
 
-      /* Anchor the logo to the top-left of the viewport (position: fixed
-         bypasses any ancestor positioning chain — guaranteed viewport-relative). */
-      .welcome-logo {
+      /* Desktop: logo ALWAYS visible at top-left of viewport on every step.
+         position: fixed bypasses ancestor positioning chain. !important
+         overrides the mobile hide rules for form/trivia. */
+      .brand-logo,
+      .stage[data-step="form"] .brand-logo,
+      .stage[data-step="trivia"] .brand-logo {
+        display: block !important;
         position: fixed;
         top: clamp(24px, 5vh, 80px);
         left: clamp(24px, 4vw, 96px);
@@ -169,13 +173,21 @@
       text-shadow: 0 2px 6px rgba(0,0,0,.18);
     }
 
-    .welcome-logo {
+    /* Brand logo: visible on welcome/success/fail (mobile), always (desktop).
+       Lives outside the step sections; CSS controls visibility per data-step. */
+    .brand-logo {
       display: block;
       width: 100%;
       max-width: min(72%, 320px);
       height: auto;
       margin: 4% auto 0;
       filter: drop-shadow(0 6px 14px rgba(0,0,0,.22));
+    }
+
+    /* Mobile: hide on the form + trivia steps (only show on welcome/success/fail) */
+    .stage[data-step="form"] .brand-logo,
+    .stage[data-step="trivia"] .brand-logo {
+      display: none;
     }
 
     .welcome-pill {
@@ -549,11 +561,13 @@
     </div>
   {% else %}
 
+  <!-- Brand logo: a single element, controlled by CSS per viewport + step -->
+  <img class="brand-logo" src="{% static 'campaigns/landing/logo_nube.png' %}"
+       alt="La Nube que te mueve... y te lleva al gol">
+
   <!-- Step 1: Welcome -->
   <section class="step is-active welcome" data-step="welcome">
     <h1 class="welcome-headline">¡BIENVENIDO!</h1>
-    <img class="welcome-logo" src="{% static 'campaigns/landing/logo_nube.png' %}"
-         alt="La Nube que te mueve... y te lleva al gol">
     <div class="welcome-spacer"></div>
     <div class="welcome-cta">
       <button type="button" class="btn btn-white btn-wide" data-go="form">EMPEZAR</button>
