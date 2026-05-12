@@ -118,6 +118,16 @@
 
       .welcome .welcome-spacer { display: none; }
 
+      /* Anchor the logo to the top-left of the viewport, over the bike */
+      .welcome-logo {
+        position: absolute;
+        top: clamp(24px, 5vh, 80px);
+        left: clamp(24px, 4vw, 96px);
+        margin: 0;
+        max-width: min(28vw, 360px);
+        z-index: 5;
+      }
+
       .titular {
         margin-top: 0;
       }
@@ -202,12 +212,12 @@
     .welcome-con img { width: 100%; height: 100%; display: block; }
 
     /* White button variant used on slide 1 */
-    .btn-white {
+    .btn.btn-white {
       background: #fff;
       color: var(--ink);
       box-shadow: 0 8px 18px rgba(0,0,0,.18);
     }
-    .btn-white:hover:not(:disabled) {
+    .btn.btn-white:hover:not(:disabled) {
       background: #f4f6fb;
       color: var(--ink);
       box-shadow: 0 12px 22px rgba(0,0,0,.22);
