@@ -66,12 +66,12 @@
       background-image: url("{% static 'campaigns/landing/bg_mobile_welcome.png' %}");
     }
 
-    /* All others use the empty stadium BG_2. */
+    /* All others use the blurred stadium BG. */
     .stage[data-step="form"],
     .stage[data-step="trivia"],
     .stage[data-step="success"],
     .stage[data-step="fail"] {
-      background-image: url("{% static 'campaigns/img/bg_2.webp' %}");
+      background-image: url("{% static 'campaigns/landing/bg_mobile_steps.png' %}");
     }
 
     @media (min-width: 720px) {
@@ -183,14 +183,27 @@
       margin-top: 8px;
     }
 
-    /* === Title images used on slides 3 / 4 / 5 === */
-    .title-img {
+    /* === Designer-exported titulars (form / trivia / success / fail) === */
+    .titular {
       display: block;
       width: 100%;
       max-width: min(96%, 420px);
       height: auto;
       margin: 7% auto 0;
       filter: drop-shadow(0 6px 14px var(--red-shadow));
+    }
+
+    .titular-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: center;
+      margin-top: 7%;
+    }
+
+    .titular-stack .titular {
+      margin-top: 0;
+      max-width: min(96%, 360px);
     }
 
     /* === Card used on form / trivia / result screens === */
@@ -484,8 +497,10 @@
 
   <!-- Step 2: Form -->
   <section class="step" data-step="form">
-    <h1 class="pill-heading">ANOTA TUS DATOS</h1>
-    <h2 class="pill-heading">Y COMIENZA A PARTICIPAR</h2>
+    <div class="titular-stack">
+      <img class="titular" src="{% static 'campaigns/landing/titular_anota_datos.png' %}" alt="Anota tus datos">
+      <img class="titular" src="{% static 'campaigns/landing/titular_y_comienza.png' %}" alt="Y comienza a participar">
+    </div>
 
     <div class="card">
       <div id="formErrors"></div>
@@ -559,7 +574,7 @@
 
   <!-- Step 3: Trivia -->
   <section class="step" data-step="trivia">
-    <img class="title-img" src="{% static 'campaigns/img/title_jugando.png' %}" alt="¡Ya estás jugando!">
+    <img class="titular" src="{% static 'campaigns/landing/titular_jugando.png' %}" alt="¡Ya estás jugando!">
 
     <div class="card">
       <p class="trivia-question">
@@ -595,7 +610,7 @@
 
   <!-- Step 4: Success -->
   <section class="step" data-step="success">
-    <img class="title-img" src="{% static 'campaigns/img/title_crack.png' %}" alt="¡Eres un crack!">
+    <img class="titular" src="{% static 'campaigns/landing/titular_crack.png' %}" alt="¡Eres un crack!">
     <div class="card result-card">
       <p>Esperamos que pronto cantes tu gol.</p>
       <button type="button" class="btn btn-wide" data-finalize>FINALIZAR</button>
@@ -604,7 +619,7 @@
 
   <!-- Step 5: Fail -->
   <section class="step" data-step="fail">
-    <img class="title-img" src="{% static 'campaigns/img/title_fallaste.png' %}" alt="¡Fallaste!">
+    <img class="titular" src="{% static 'campaigns/landing/titular_fallaste.png' %}" alt="¡Fallaste!">
     <div class="card result-card">
       <p>Pero sigue jugando con nosotros.</p>
       <button type="button" class="btn btn-wide" data-finalize>FINALIZAR</button>

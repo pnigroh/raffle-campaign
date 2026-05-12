@@ -53,3 +53,38 @@ class SubmissionFormRedesignWelcomeTests(TestCase):
         self.assertNotIn('class="welcome-headline"', body)
         self.assertNotIn('class="welcome-pill"', body)
         self.assertNotIn('class="welcome-gol"', body)
+
+
+class SubmissionFormRedesignTitularsTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.campaign = _open_campaign(slug="futboleros-titulars")
+
+    def test_form_step_uses_new_titulars(self):
+        url = reverse("submission_form", kwargs={"campaign_slug": self.campaign.slug})
+        body = self.client.get(url).content.decode()
+        self.assertIn("campaigns/landing/titular_anota_datos.png", body)
+        self.assertIn("campaigns/landing/titular_y_comienza.png", body)
+        # Legacy CSS-rendered pill headings are gone from the form step
+        self.assertNotIn(">ANOTA TUS DATOS<", body)
+        self.assertNotIn(">Y COMIENZA A PARTICIPAR<", body)
+
+    def test_trivia_step_uses_new_titular(self):
+        url = reverse("submission_form", kwargs={"campaign_slug": self.campaign.slug})
+        body = self.client.get(url).content.decode()
+        self.assertIn("campaigns/landing/titular_jugando.png", body)
+        self.assertNotIn("campaigns/img/title_jugando.png", body)
+
+    def test_success_and_fail_use_new_titulars(self):
+        url = reverse("submission_form", kwargs={"campaign_slug": self.campaign.slug})
+        body = self.client.get(url).content.decode()
+        self.assertIn("campaigns/landing/titular_crack.png", body)
+        self.assertIn("campaigns/landing/titular_fallaste.png", body)
+        self.assertNotIn("campaigns/img/title_crack.png", body)
+        self.assertNotIn("campaigns/img/title_fallaste.png", body)
+
+    def test_steps_use_new_blurred_stadium_bg(self):
+        url = reverse("submission_form", kwargs={"campaign_slug": self.campaign.slug})
+        body = self.client.get(url).content.decode()
+        self.assertIn("campaigns/landing/bg_mobile_steps.png", body)
+        self.assertNotIn("campaigns/img/bg_2.webp", body)
