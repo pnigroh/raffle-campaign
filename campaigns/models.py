@@ -176,6 +176,19 @@ class Submission(models.Model):
     )
     invalidation_reason = models.CharField(max_length=200, blank=True)
 
+    # --- Already-participated lifecycle ---
+    participated_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Set when this submission was last included in any raffle pool. "
+                  "Null = eligible for future draws."
+    )
+    eligibility_restored_at = models.DateTimeField(null=True, blank=True)
+    eligibility_restored_by = models.ForeignKey(
+        User, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='eligibility_restorations',
+    )
+    eligibility_restoration_reason = models.CharField(max_length=200, blank=True)
+
     class Meta:
         ordering = ['-submitted_at']
 
@@ -199,6 +212,36 @@ class Raffle(models.Model):
     segment_date_from = models.DateField(null=True, blank=True)
     segment_date_to = models.DateField(null=True, blank=True)
     total_participants = models.PositiveIntegerField(default=0)
+
+    # --- Audit + reproducibility ---
+    seed = models.CharField(
+        max_length=64, blank=True,
+        help_text="Hex string passed to random.Random(seed). 32 chars from os.urandom(16) by default."
+    )
+    algorithm = models.CharField(
+        max_length=64, default='python.random.shuffle',
+        help_text="Identifier for the RNG algorithm. Bump algorithm_version if behavior changes."
+    )
+    algorithm_version = models.CharField(max_length=16, default='1.0')
+    participant_pool_snapshot = models.JSONField(
+        default=list, blank=True,
+        help_text="Ordered list of submission IDs as they were passed to the shuffler."
+    )
+    prize_quantities = models.JSONField(
+        default=list, blank=True,
+        help_text="List of {prize_id, prize_name, quantity} so the audit page is "
+                  "readable even after a Prize is renamed or deleted."
+    )
+    consumed_pool = models.BooleanField(
+        default=True,
+        help_text="True if participated_at was set on every pool member after the draw."
+    )
+    excluded_already_participated = models.BooleanField(
+        default=True,
+        help_text="True if the pool was restricted to submissions where participated_at is null."
+    )
+    filter_search = models.CharField(max_length=200, blank=True)
+    filter_store_id = models.IntegerField(null=True, blank=True)
 
     class Meta:
         ordering = ['-conducted_at']
