@@ -205,7 +205,8 @@ class SubmissionAdmin(CampaignScopedAdminMixin, ModelAdmin):
     list_display = ['full_name', 'email', 'campaign', 'store', 'validity_badge', 'submitted_at']
     list_filter = ['is_valid', 'campaign', 'store', 'state']
     search_fields = ['first_name', 'last_name', 'email', 'phone']
-    readonly_fields = ['submitted_at', 'ip_address', 'image_1_preview', 'image_2_preview', 'validated_at', 'validated_by']
+    readonly_fields = ['submitted_at', 'ip_address', 'image_1_preview', 'image_2_preview', 'validated_at', 'validated_by',
+                       'participated_at', 'eligibility_restored_at', 'eligibility_restored_by', 'eligibility_restoration_reason']
     autocomplete_fields = ['store']
     actions = ['mark_valid', 'mark_invalid']
     fieldsets = (
@@ -223,6 +224,11 @@ class SubmissionAdmin(CampaignScopedAdminMixin, ModelAdmin):
         }),
         ('Meta', {
             'fields': ('submitted_at', 'ip_address'),
+        }),
+        ('Participation lifecycle', {
+            'fields': ('participated_at', 'eligibility_restored_at',
+                       'eligibility_restored_by', 'eligibility_restoration_reason'),
+            'description': "Use the dashboard's 'Restaurar elegibilidad' button to flip a participated submission back to eligible — it records the audit trail. These fields are read-only here.",
         }),
     )
 

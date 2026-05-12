@@ -272,6 +272,13 @@
     if (dateFrom) params.append('date_from', dateFrom);
     if (dateTo) params.append('date_to', dateTo);
 
+    const searchEl = document.getElementById('id_search');
+    const storeEl = document.getElementById('id_store');
+    const incEl = document.getElementById('id_include_already_participated');
+    if (searchEl && searchEl.value) params.append('search', searchEl.value);
+    if (storeEl && storeEl.value) params.append('store', storeEl.value);
+    if (incEl && incEl.checked) params.append('include_already_participated', 'on');
+
     poolCountEl.style.opacity = '0.5';
 
     fetch(`${filterCountUrl}?${params.toString()}`)
@@ -311,6 +318,14 @@
   filterFields.forEach(field => {
     field.addEventListener('change', () => fetchCount());
     field.addEventListener('input', () => debounce(fetchCount, 400));
+  });
+
+  ['id_search', 'id_store', 'id_include_already_participated'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('change', fetchCount);
+      el.addEventListener('input', fetchCount);
+    }
   });
 
   prizeQtyInputs.forEach(inp => {
