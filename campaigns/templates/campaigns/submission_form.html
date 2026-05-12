@@ -530,20 +530,17 @@
 
   <!-- Step 1: Welcome -->
   <section class="step is-active welcome" data-step="welcome">
+    <h1 class="welcome-headline">¡BIENVENIDO!</h1>
     <div class="welcome-spacer"></div>
     <div class="welcome-cta">
-      <button type="button" class="btn-image btn-empezar" data-go="form" aria-label="Empezar">
-        <img src="{% static 'campaigns/landing/btn_empezar.png' %}" alt="">
-      </button>
+      <button type="button" class="btn btn-white btn-wide" data-go="form">EMPEZAR</button>
     </div>
   </section>
 
   <!-- Step 2: Form -->
   <section class="step" data-step="form">
-    <div class="titular-stack">
-      <img class="titular" src="{% static 'campaigns/landing/titular_anota_datos.png' %}" alt="Anota tus datos">
-      <img class="titular" src="{% static 'campaigns/landing/titular_y_comienza.png' %}" alt="Y comienza a participar">
-    </div>
+    <h1 class="pill-heading">ANOTA TUS DATOS</h1>
+    <h2 class="pill-heading">Y COMIENZA A PARTICIPAR</h2>
 
     <div class="card">
       <div id="formErrors"></div>
@@ -617,7 +614,7 @@
 
   <!-- Step 3: Trivia -->
   <section class="step" data-step="trivia">
-    <img class="titular" src="{% static 'campaigns/landing/titular_jugando.png' %}" alt="¡Ya estás jugando!">
+    <h1 class="pill-heading">¡YA ESTÁS JUGANDO!</h1>
 
     <div class="card">
       <p class="trivia-question">

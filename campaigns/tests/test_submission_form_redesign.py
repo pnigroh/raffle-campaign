@@ -7,6 +7,14 @@ These tests assert that the right asset paths appear in the rendered HTML
 of the public submission form. They do NOT exercise the form-submission
 flow itself (that is covered by the existing per-campaign UX, untouched
 by this redesign).
+
+NOTE: The redesign shipped in a MIXED state because the designer's PNG
+exports for titular_anota_datos, titular_y_comienza, titular_jugando, and
+btn_empezar are missing their text/pill content (the Illustrator layers
+weren't flattened correctly). Those steps revert to the legacy CSS
+.pill-heading and .btn.btn-white pattern. The PNGs for titular_crack and
+titular_fallaste are correct and stay as <img>. The mobile/desktop BGs
+work as-is. The "La Nube..." logo is not yet shipped (no PNG asset).
 """
 
 from datetime import timedelta
@@ -37,22 +45,26 @@ class SubmissionFormRedesignWelcomeTests(TestCase):
     def setUpTestData(cls):
         cls.campaign = _open_campaign()
 
-    def test_welcome_step_uses_new_bg_and_drops_legacy_composition(self):
+    def test_welcome_uses_new_bg(self):
         url = reverse("submission_form", kwargs={"campaign_slug": self.campaign.slug})
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         body = resp.content.decode()
-        # New welcome BG referenced
+        # New welcome BG referenced (bike + sky + stadium, no overlays)
         self.assertIn("campaigns/landing/bg_mobile_welcome.png", body)
-        # New EMPEZAR button asset referenced
-        self.assertIn("campaigns/landing/btn_empezar.png", body)
-        # Legacy welcome composition assets are gone
+        # Legacy GOOOOL composition assets are gone — only ¡BIENVENIDO! + EMPEZAR remain
         self.assertNotIn("campaigns/img/goool.png", body)
         self.assertNotIn("campaigns/img/con.png", body)
-        # And the legacy class names are not in the welcome step markup
-        self.assertNotIn('class="welcome-headline"', body)
-        self.assertNotIn('class="welcome-pill"', body)
-        self.assertNotIn('class="welcome-gol"', body)
+
+    def test_welcome_uses_css_rendered_empezar_button(self):
+        # btn_empezar.png is broken (no text content in the export), so the
+        # welcome step uses the legacy .btn.btn-white CSS pill instead.
+        url = reverse("submission_form", kwargs={"campaign_slug": self.campaign.slug})
+        body = self.client.get(url).content.decode()
+        self.assertIn(">EMPEZAR<", body)
+        self.assertIn('class="btn btn-white btn-wide"', body)
+        # The broken btn_empezar.png is NOT wired into the live template.
+        self.assertNotIn("campaigns/landing/btn_empezar.png", body)
 
 
 class SubmissionFormRedesignTitularsTests(TestCase):
@@ -60,19 +72,24 @@ class SubmissionFormRedesignTitularsTests(TestCase):
     def setUpTestData(cls):
         cls.campaign = _open_campaign(slug="futboleros-titulars")
 
-    def test_form_step_uses_new_titulars(self):
+    def test_form_step_uses_css_pill_headings(self):
+        # titular_anota_datos.png + titular_y_comienza.png are broken (pills
+        # without text), so the form step uses the legacy .pill-heading CSS.
         url = reverse("submission_form", kwargs={"campaign_slug": self.campaign.slug})
         body = self.client.get(url).content.decode()
-        self.assertIn("campaigns/landing/titular_anota_datos.png", body)
-        self.assertIn("campaigns/landing/titular_y_comienza.png", body)
-        # Legacy CSS-rendered pill headings are gone from the form step
-        self.assertNotIn(">ANOTA TUS DATOS<", body)
-        self.assertNotIn(">Y COMIENZA A PARTICIPAR<", body)
+        self.assertIn(">ANOTA TUS DATOS<", body)
+        self.assertIn(">Y COMIENZA A PARTICIPAR<", body)
+        # The broken PNGs are NOT wired into the live template.
+        self.assertNotIn("campaigns/landing/titular_anota_datos.png", body)
+        self.assertNotIn("campaigns/landing/titular_y_comienza.png", body)
 
-    def test_trivia_step_uses_new_titular(self):
+    def test_trivia_step_uses_css_pill_heading(self):
+        # titular_jugando.png is broken (red text on transparent, no pill),
+        # so the trivia step uses the legacy .pill-heading CSS.
         url = reverse("submission_form", kwargs={"campaign_slug": self.campaign.slug})
         body = self.client.get(url).content.decode()
-        self.assertIn("campaigns/landing/titular_jugando.png", body)
+        self.assertIn(">¡YA ESTÁS JUGANDO!<", body)
+        self.assertNotIn("campaigns/landing/titular_jugando.png", body)
         self.assertNotIn("campaigns/img/title_jugando.png", body)
 
     def test_success_and_fail_use_new_titulars(self):
