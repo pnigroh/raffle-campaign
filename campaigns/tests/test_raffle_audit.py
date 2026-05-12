@@ -325,11 +325,14 @@ class RestoreEligibilityTests(TestCase):
 
     def test_restore_eligibility_on_already_eligible_returns_400(self):
         from django.urls import reverse
-        Submission.objects.filter(id=self.sub_x.id).update(participated_at=None)
+        # Use a fresh local submission whose participated_at stays null,
+        # rather than mutating the shared setUpTestData row.
+        eligible = _submission(self.camp_x, first_name="Eligible", email="elig@x.com")
+        self.assertIsNone(eligible.participated_at)
         self.client.force_login(self.alice)
         resp = self.client.post(
             reverse("submission_restore_eligibility",
-                    args=[self.camp_x.id, self.sub_x.id]),
+                    args=[self.camp_x.id, eligible.id]),
             data={"reason": "should be a no-op"},
         )
         self.assertEqual(resp.status_code, 400)
