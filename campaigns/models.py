@@ -182,12 +182,18 @@ class Submission(models.Model):
         help_text="Set when this submission was last included in any raffle pool. "
                   "Null = eligible for future draws."
     )
-    eligibility_restored_at = models.DateTimeField(null=True, blank=True)
+    eligibility_restored_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Timestamp when participated_at was cleared to re-admit this submission to the pool."
+    )
     eligibility_restored_by = models.ForeignKey(
         User, null=True, blank=True, on_delete=models.SET_NULL,
         related_name='eligibility_restorations',
     )
-    eligibility_restoration_reason = models.CharField(max_length=200, blank=True)
+    eligibility_restoration_reason = models.CharField(
+        max_length=200, blank=True,
+        help_text="Staff-provided reason for restoring eligibility."
+    )
 
     class Meta:
         ordering = ['-submitted_at']
@@ -240,8 +246,14 @@ class Raffle(models.Model):
         default=True,
         help_text="True if the pool was restricted to submissions where participated_at is null."
     )
-    filter_search = models.CharField(max_length=200, blank=True)
-    filter_store_id = models.IntegerField(null=True, blank=True)
+    filter_search = models.CharField(
+        max_length=200, blank=True,
+        help_text="Free-text search string applied to the pool query at draw time. Blank = no filter."
+    )
+    filter_store_id = models.IntegerField(
+        null=True, blank=True,
+        help_text="Store PK used to filter the pool at draw time. Stored as int (not FK) to survive Store deletion."
+    )
 
     class Meta:
         ordering = ['-conducted_at']
