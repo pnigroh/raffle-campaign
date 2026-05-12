@@ -1,0 +1,166 @@
+{% extends "campaigns/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Auditoría del Sorteo" %} #{{ raffle.id }} · Promo-Domo{% endblock %}
+{% block topbar_title %}{% trans "Auditoría del Sorteo" %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+    <div>
+      <h1 class="pd-display">
+        <i class="bi bi-shield-check me-2" style="color: var(--pd-coral);"></i>
+        {% blocktrans with id=raffle.id %}Auditoría del Sorteo #{{ id }}{% endblocktrans %}
+      </h1>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Tablero" %}</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'campaign_detail' campaign.id %}">{{ campaign.name }}</a></li>
+          <li class="breadcrumb-item active">{% trans "Auditoría" %} #{{ raffle.id }}</li>
+        </ol>
+      </nav>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'raffle_audit_json' raffle.id %}" class="btn btn-outline-secondary">
+        <i class="bi bi-download me-1"></i>{% trans "Descargar JSON" %}
+      </a>
+      <a href="{% url 'raffle_audit' raffle.id %}" class="btn btn-outline-primary">
+        <i class="bi bi-arrow-clockwise me-1"></i>{% trans "Verificar de nuevo" %}
+      </a>
+    </div>
+  </div>
+</div>
+
+{# Verification banner #}
+{% if verify_result.status == 'ok' %}
+  <div class="alert alert-success d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-check-circle-fill"></i>
+    <span>{% trans "Auditoría verificada — los ganadores se reprodujeron exactamente." %}</span>
+  </div>
+{% elif verify_result.status == 'mismatch' %}
+  <div class="alert alert-danger d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-x-circle-fill"></i>
+    <span>{% trans "AUDITORÍA FALLÓ — los ganadores re-calculados NO coinciden con los almacenados." %}</span>
+  </div>
+{% else %}
+  <div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <span>{% trans "No se puede verificar:" %} {{ verify_result.diff.reason }}</span>
+  </div>
+{% endif %}
+
+<div class="row g-3">
+  {# Who/When #}
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-person-badge me-2"></i>{% trans "Realización" %}</div>
+      <div class="card-body">
+        <p class="mb-1"><strong>{% trans "Realizado por:" %}</strong> {{ raffle.conducted_by.username|default:"—" }}</p>
+        <p class="mb-1"><strong>{% trans "Fecha:" %}</strong> {{ raffle.conducted_at|date:"d/m/Y H:i:s" }}</p>
+        {% if raffle.notes %}<p class="mb-0"><strong>{% trans "Notas:" %}</strong> {{ raffle.notes }}</p>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# Algorithm #}
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-cpu me-2"></i>{% trans "Algoritmo" %}</div>
+      <div class="card-body">
+        <p class="mb-1"><strong>{% trans "Nombre:" %}</strong> <code>{{ raffle.algorithm }}</code></p>
+        <p class="mb-1"><strong>{% trans "Versión:" %}</strong> <code>{{ raffle.algorithm_version }}</code></p>
+        <p class="mb-0"><strong>{% trans "Semilla:" %}</strong> <code style="word-break:break-all;">{{ raffle.seed|default:"—" }}</code></p>
+      </div>
+    </div>
+  </div>
+
+  {# Filters #}
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-funnel me-2"></i>{% trans "Filtros aplicados" %}</div>
+      <div class="card-body">
+        <div class="d-flex flex-wrap gap-3" style="font-size:0.9rem;">
+          <div><strong>{% trans "Estado:" %}</strong> {{ raffle.segment_state|default:"—" }}</div>
+          <div><strong>{% trans "Municipio:" %}</strong> {{ raffle.segment_county|default:"—" }}</div>
+          <div><strong>{% trans "Desde:" %}</strong> {{ raffle.segment_date_from|date:"d/m/Y"|default:"—" }}</div>
+          <div><strong>{% trans "Hasta:" %}</strong> {{ raffle.segment_date_to|date:"d/m/Y"|default:"—" }}</div>
+          <div><strong>{% trans "Búsqueda:" %}</strong> {{ raffle.filter_search|default:"—" }}</div>
+          <div><strong>{% trans "Tienda ID:" %}</strong> {{ raffle.filter_store_id|default:"—" }}</div>
+          <div><strong>{% trans "Excluyó ya-participantes:" %}</strong> {{ raffle.excluded_already_participated|yesno:"Sí,No" }}</div>
+          <div><strong>{% trans "Consumió pool:" %}</strong> {{ raffle.consumed_pool|yesno:"Sí,No" }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Pool #}
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-people me-2"></i>{% trans "Pool de participantes" %}
+        <span class="badge bg-primary rounded-pill ms-2">{{ raffle.participant_pool_snapshot|length }}</span>
+      </div>
+      <div class="card-body" style="max-height:320px; overflow-y:auto;">
+        {% if missing_pool_ids %}
+          <div class="alert alert-warning py-2 mb-2" style="font-size:0.85rem;">
+            {% blocktrans count n=missing_pool_ids|length %}{{ n }} participante del pool original ya no existe en la base de datos.{% plural %}{{ n }} participantes del pool original ya no existen en la base de datos.{% endblocktrans %}
+          </div>
+        {% endif %}
+        <ul class="list-unstyled mb-0" style="font-family:monospace; font-size:0.85rem;">
+          {% for sid in raffle.participant_pool_snapshot %}
+            <li>#{{ sid }}{% for sub in pool_submissions %}{% if sub.id == sid %} — {{ sub.full_name }}{% endif %}{% endfor %}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  {# Prizes #}
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-trophy me-2"></i>{% trans "Premios sorteados" %}</div>
+      <div class="card-body">
+        <ul class="list-unstyled mb-0">
+          {% for entry in raffle.prize_quantities %}
+            <li>{{ entry.prize_name }} — {% blocktrans with q=entry.quantity %}cantidad: {{ q }}{% endblocktrans %} <span class="text-muted">(prize_id: {{ entry.prize_id }})</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  {# Winners #}
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-stars me-2"></i>{% trans "Ganadores" %}</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead>
+            <tr><th>{% trans "Premio" %}</th><th>{% trans "Posición" %}</th><th>{% trans "Participante" %}</th><th>{% trans "ID" %}</th></tr>
+          </thead>
+          <tbody>
+            {% for w in winners %}
+              <tr>
+                <td>{{ w.prize.name }}</td>
+                <td>{{ w.position }}</td>
+                <td>{{ w.submission.full_name }}</td>
+                <td><code>{{ w.submission.id }}</code></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {# Restorations #}
+  {% if restored_count %}
+  <div class="col-12">
+    <div class="alert alert-info d-flex align-items-center gap-2">
+      <i class="bi bi-arrow-counterclockwise"></i>
+      <span>{% blocktrans count n=restored_count %}{{ n }} participante de este sorteo ha tenido su elegibilidad restaurada después del draw.{% plural %}{{ n }} participantes de este sorteo han tenido su elegibilidad restaurada después del draw.{% endblocktrans %}</span>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

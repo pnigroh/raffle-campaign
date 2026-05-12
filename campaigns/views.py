@@ -484,3 +484,40 @@ def submission_restore_eligibility(request, campaign_id, submission_id):
         f'Elegibilidad restaurada para {submission.full_name}.',
     )
     return redirect('campaign_detail', campaign_id=campaign.id)
+
+
+@login_required
+def raffle_audit(request, raffle_id):
+    """Render the audit page for a raffle, including verification status."""
+    from .utils import verify_raffle_audit
+    raffle = get_object_or_404(Raffle, id=raffle_id)
+    if not request.user.is_superuser and not raffle.campaign.managers.filter(
+        id=request.user.id
+    ).exists():
+        raise PermissionDenied("You don't have access to this raffle.")
+
+    verify_result = verify_raffle_audit(raffle)
+    pool_submissions = list(
+        Submission.objects.filter(id__in=raffle.participant_pool_snapshot)
+        .order_by('id')
+    )
+    pool_existing_ids = {s.id for s in pool_submissions}
+    missing_pool_ids = [sid for sid in raffle.participant_pool_snapshot
+                        if sid not in pool_existing_ids]
+    winners = raffle.winners.select_related('submission', 'prize').order_by(
+        'prize__order', 'position'
+    )
+    restored_count = Submission.objects.filter(
+        id__in=raffle.participant_pool_snapshot,
+        eligibility_restored_at__gte=raffle.conducted_at,
+    ).count()
+
+    return render(request, 'campaigns/raffle_audit.html', {
+        'raffle': raffle,
+        'campaign': raffle.campaign,
+        'verify_result': verify_result,
+        'pool_submissions': pool_submissions,
+        'missing_pool_ids': missing_pool_ids,
+        'winners': winners,
+        'restored_count': restored_count,
+    })

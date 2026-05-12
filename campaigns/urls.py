@@ -30,4 +30,6 @@ urlpatterns = [
     path('dashboard/campaign/<int:campaign_id>/prize/<int:prize_id>/delete/', views.prize_delete, name='prize_delete'),
     path('dashboard/raffle/<int:raffle_id>/results/', views.raffle_results, name='raffle_results'),
     path('dashboard/raffle/<int:raffle_id>/export/', views.export_raffle_winners, name='export_winners'),
+    path('dashboard/raffle/<int:raffle_id>/audit/', views.raffle_audit, name='raffle_audit'),
+    path('dashboard/raffle/<int:raffle_id>/audit/json/', views.raffle_audit, name='raffle_audit_json'),  # placeholder; Task 7 replaces
 ]

@@ -448,3 +448,54 @@ class VerifyRaffleAuditTests(TestCase):
         result = verify_raffle_audit(raffle)
         self.assertEqual(result['status'], 'unverifiable')
         self.assertIn('not supported', result['diff']['reason'].lower())
+
+
+class RaffleAuditPageTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.alice = User.objects.create_user("alice", password="pw", is_staff=True)
+        cls.bob = User.objects.create_user("bob", password="pw", is_staff=True)
+        cls.camp_x = _campaign(name="X", slug="x", manager=cls.alice)
+        cls.camp_y = _campaign(name="Y", slug="y", manager=cls.bob)
+        cls.subs = [
+            _submission(cls.camp_x, first_name=f"S{i}", email=f"s{i}@example.com")
+            for i in range(5)
+        ]
+        cls.prize = Prize.objects.create(campaign=cls.camp_x, name="P", quantity=2)
+
+    def _draw(self):
+        from campaigns.utils import conduct_raffle
+        return conduct_raffle(
+            campaign=self.camp_x,
+            prizes_with_quantities=[(self.prize, 2)],
+            submission_qs=self.camp_x.submissions.all(),
+            conducted_by=self.alice,
+            consume_pool=False,
+        )
+
+    def test_audit_page_renders_for_recorded_raffle(self):
+        from django.urls import reverse
+        raffle = self._draw()
+        self.client.force_login(self.alice)
+        resp = self.client.get(reverse("raffle_audit", args=[raffle.id]))
+        self.assertEqual(resp.status_code, 200)
+        body = resp.content.decode()
+        self.assertIn(raffle.seed, body)
+        self.assertIn("python.random.shuffle", body)
+        # All 5 submission IDs from the snapshot appear on the page
+        for sub in self.subs:
+            self.assertIn(str(sub.id), body)
+
+    def test_audit_page_403_for_non_manager(self):
+        from django.urls import reverse
+        raffle = self._draw()
+        self.client.force_login(self.bob)
+        resp = self.client.get(reverse("raffle_audit", args=[raffle.id]))
+        self.assertEqual(resp.status_code, 403)
+
+    def test_audit_page_includes_verify_status_in_context(self):
+        from django.urls import reverse
+        raffle = self._draw()
+        self.client.force_login(self.alice)
+        resp = self.client.get(reverse("raffle_audit", args=[raffle.id]))
+        self.assertEqual(resp.context["verify_result"]["status"], "ok")
