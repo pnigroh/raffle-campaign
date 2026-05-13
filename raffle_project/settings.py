@@ -90,11 +90,16 @@ TEMPLATES = [
 WSGI_APPLICATION = 'raffle_project.wsgi.application'
 
 # Database
+# In dev, the absence of DATABASE_URL falls back to local SQLite so the
+# existing dev workflow keeps working untouched. In prod, .env.prod sets
+# DATABASE_URL=postgres://... and the compose stack provides the server.
+import dj_database_url
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+        conn_max_age=600,
+    )
 }
 
 # Password validation
