@@ -43,4 +43,6 @@ htmlcov/
 
 # Production deployment
 .env.prod
+# Legacy local bind-mount target (replaced by /srv/raffle/ in prod).
+# Kept here so any accidental dev-side prod-data/ doesn't get committed.
 prod-data/
