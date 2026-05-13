@@ -1,0 +1,15 @@
+# pgBackRest backup schedule. All commands run as the postgres user.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Weekly full backup, Sundays at 02:00 UTC.
+0 2 * * 0 postgres pgbackrest --stanza=raffle --type=full backup >> /var/log/pgbackrest/cron.log 2>&1
+
+# Daily differential, Mon-Sat at 02:00 UTC.
+0 2 * * 1-6 postgres pgbackrest --stanza=raffle --type=diff backup >> /var/log/pgbackrest/cron.log 2>&1
+
+# Hourly incremental, on the hour (skipping 02:00 to avoid colliding with diff/full).
+0 0-1,3-23 * * * postgres pgbackrest --stanza=raffle --type=incr backup >> /var/log/pgbackrest/cron.log 2>&1
+
+# Daily 'info' check at 04:00 — emits backup status to log for the alerting cron to scrape.
+0 4 * * * postgres pgbackrest --stanza=raffle info >> /var/log/pgbackrest/info.log 2>&1
