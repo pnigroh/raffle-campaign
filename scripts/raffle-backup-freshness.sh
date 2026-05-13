@@ -28,10 +28,17 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
 fi
 
 set -euo pipefail
+
+: "${COMPOSE_FILE:=/srv/raffle/repo/docker-compose.prod.yml}"
+if [ ! -f "$COMPOSE_FILE" ]; then
+    echo "FATAL: COMPOSE_FILE='$COMPOSE_FILE' not found; set COMPOSE_FILE env var or fix this default" >&2
+    exit 3
+fi
+
 errors=0
 
 # Check 1: latest WAL in B2 archive.
-WAL_TS=$(docker compose -f /path/to/docker-compose.prod.yml exec -T pgbackrest \
+WAL_TS=$(docker compose -f "$COMPOSE_FILE" exec -T pgbackrest \
     su -c 'pgbackrest --stanza=raffle info --output=json' postgres \
     | python3 -c '
 import json, sys
