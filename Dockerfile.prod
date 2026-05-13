@@ -20,8 +20,10 @@ RUN mkdir -p /app/db /app/staticfiles /app/media
 EXPOSE 8000
 
 CMD ["sh", "-c", "\
-  for i in $(seq 1 30); do \
-    python -c 'import os, psycopg; psycopg.connect(os.environ[\"DATABASE_URL\"]).close()' 2>/dev/null && break; \
+  RETRIES=30; \
+  until python -c 'import os, psycopg; psycopg.connect(os.environ[\"DATABASE_URL\"]).close()' 2>/dev/null; do \
+    RETRIES=$((RETRIES - 1)); \
+    [ \"$RETRIES\" -eq 0 ] && { echo 'FATAL: postgres unreachable after 60s'; exit 1; }; \
     echo 'web: waiting for postgres...'; sleep 2; \
   done && \
   python manage.py migrate --noinput && \
