@@ -78,7 +78,7 @@ class CampaignAdmin(ModelAdmin):
     inlines = [PrizeInline]
     fieldsets = (
         ('Basics', {
-            'fields': ('name', 'slug', 'description', 'is_active'),
+            'fields': ('name', 'slug', 'theme', 'description', 'is_active'),
         }),
         ('Schedule', {
             'fields': ('start_date', 'end_date'),

@@ -335,3 +335,19 @@ class ThemeRenderTests(TestCase):
         (self.t.directory / "submission_form.html").unlink()
         r = self.client.get(f"/submit/{self.c_themed.slug}/")
         self.assertEqual(r.status_code, 404)
+
+
+class CampaignAdminThemeDropdownTests(TestCase):
+    def test_campaign_change_form_includes_theme_field(self):
+        from campaigns.models import Campaign
+        su = User.objects.create_superuser("rootu", "ru@x.test", "x")
+        c = Campaign.objects.create(
+            name="C", slug="c-theme-dropdown",
+            start_date="2026-06-01", end_date="2026-06-30",
+        )
+        self.client.force_login(su)
+        r = self.client.get(
+            reverse("admin:campaigns_campaign_change", args=[c.id])
+        )
+        self.assertContains(r, "id_theme")
+        self.assertContains(r, "Futboleros (Mundial 2026)")
