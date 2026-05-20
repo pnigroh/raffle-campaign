@@ -30,6 +30,23 @@ def _get_managed_campaign_or_403(user, campaign_id):
         raise PermissionDenied("You don't have access to this campaign.")
 
 
+def _get_campaign_for_host(request, slug):
+    """Look up an active campaign bound to the request's host.
+
+    Returns the Campaign or raises Http404. The host portion of
+    ``request.get_host()`` is split on ``:`` because the reverse proxy
+    terminates TLS and may forward ``a.test:8500`` in dev. We never
+    expose port numbers in Domain.hostname.
+    """
+    host = request.get_host().split(":")[0]
+    return get_object_or_404(
+        Campaign,
+        domain__hostname=host,
+        slug=slug,
+        is_active=True,
+    )
+
+
 def submission_form(request, campaign_slug):
     campaign = get_object_or_404(Campaign, slug=campaign_slug, is_active=True)
     now = timezone.now()

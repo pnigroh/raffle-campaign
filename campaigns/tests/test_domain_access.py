@@ -79,3 +79,45 @@ class CampaignDomainTests(TestCase):
         other = User.objects.create_user("other", "o@x.test", "x")
         self.b.managers.add(other)
         self.assertEqual(Campaign.objects.visible_to(other).count(), 0)
+
+
+from django.http import Http404
+from django.test import RequestFactory, override_settings
+
+from campaigns.views import _get_campaign_for_host
+
+
+@override_settings(ALLOWED_HOSTS=["*"])
+class GetCampaignForHostTests(TestCase):
+    def setUp(self):
+        self.a = Domain.objects.create(hostname="a.test")
+        self.b = Domain.objects.create(hostname="b.test")
+        self.c_a = Campaign.objects.create(**_campaign_kwargs("A-summer", "summer", self.a))
+        self.c_b = Campaign.objects.create(**_campaign_kwargs("B-summer", "summer", self.b))
+
+    def _req(self, host):
+        rf = RequestFactory(HTTP_HOST=host)
+        return rf.get("/")
+
+    def test_correct_host_returns_campaign(self):
+        c = _get_campaign_for_host(self._req("a.test"), "summer")
+        self.assertEqual(c, self.c_a)
+
+    def test_wrong_host_raises_404(self):
+        with self.assertRaises(Http404):
+            _get_campaign_for_host(self._req("nope.test"), "summer")
+
+    def test_same_slug_different_host_disambiguates(self):
+        a = _get_campaign_for_host(self._req("a.test"), "summer")
+        b = _get_campaign_for_host(self._req("b.test"), "summer")
+        self.assertEqual({a, b}, {self.c_a, self.c_b})
+
+    def test_host_with_port_is_stripped(self):
+        c = _get_campaign_for_host(self._req("a.test:8500"), "summer")
+        self.assertEqual(c, self.c_a)
+
+    def test_inactive_campaign_returns_404(self):
+        self.c_a.is_active = False
+        self.c_a.save()
+        with self.assertRaises(Http404):
+            _get_campaign_for_host(self._req("a.test"), "summer")
