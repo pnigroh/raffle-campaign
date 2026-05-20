@@ -247,3 +247,31 @@ class DashboardScopingTests(TestCase):
         url = f"/dashboard/campaign/{self.c_b.id}/"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 404)
+
+
+from django.core.checks import Warning, run_checks
+
+
+class AllowedHostsCheckTests(TestCase):
+    def setUp(self):
+        Domain.objects.create(hostname="not-in-allowed-hosts.test")
+
+    @override_settings(ALLOWED_HOSTS=["something-else.test"])
+    def test_warning_emitted_when_domain_missing(self):
+        from campaigns.checks import domains_in_allowed_hosts
+        warnings = domains_in_allowed_hosts(app_configs=None)
+        self.assertTrue(
+            any(w.id == "campaigns.W001" for w in warnings)
+        )
+
+    @override_settings(ALLOWED_HOSTS=["*"])
+    def test_wildcard_suppresses_warning(self):
+        from campaigns.checks import domains_in_allowed_hosts
+        warnings = domains_in_allowed_hosts(app_configs=None)
+        self.assertEqual(warnings, [])
+
+    @override_settings(ALLOWED_HOSTS=["not-in-allowed-hosts.test", "promo-domo.example"])
+    def test_no_warning_when_all_present(self):
+        from campaigns.checks import domains_in_allowed_hosts
+        warnings = domains_in_allowed_hosts(app_configs=None)
+        self.assertEqual(warnings, [])
