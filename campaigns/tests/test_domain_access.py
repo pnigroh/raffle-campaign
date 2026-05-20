@@ -167,3 +167,47 @@ class DomainAdminTests(TestCase):
         r = self.client.get(reverse("admin:campaigns_domain_changelist"))
         self.assertContains(r, "a.test")
         self.assertNotContains(r, "b.test")
+
+
+class CampaignAdminScopingTests(TestCase):
+    def setUp(self):
+        self.su = User.objects.create_superuser("root", "r@x.test", "x")
+        self.alice = User.objects.create_user(
+            "alice", "a@x.test", "x", is_staff=True
+        )
+        from django.contrib.auth.models import Group
+        Group.objects.get(name="Campaign Managers").user_set.add(self.alice)
+        self.a = Domain.objects.create(hostname="a.test")
+        self.b = Domain.objects.create(hostname="b.test")
+        self.a.managers.add(self.alice)
+        self.c_a = Campaign.objects.create(
+            **_campaign_kwargs("A-camp", "x", self.a)
+        )
+        self.c_b = Campaign.objects.create(
+            **_campaign_kwargs("B-camp", "x", self.b)
+        )
+
+    def test_changelist_only_shows_visible(self):
+        self.client.force_login(self.alice)
+        r = self.client.get(reverse("admin:campaigns_campaign_changelist"))
+        self.assertContains(r, "A-camp")
+        self.assertNotContains(r, "B-camp")
+
+    def test_cannot_open_other_tenants_campaign(self):
+        self.client.force_login(self.alice)
+        url = reverse("admin:campaigns_campaign_change", args=[self.c_b.id])
+        r = self.client.get(url)
+        # Django admin returns 302 to the changelist when get_object returns None
+        self.assertIn(r.status_code, (302, 404))
+
+    def test_domain_dropdown_filtered_for_non_superuser(self):
+        from campaigns.admin import CampaignAdmin
+        from django.contrib.admin.sites import AdminSite
+        ma = CampaignAdmin(Campaign, AdminSite())
+        rf = RequestFactory()
+        req = rf.get("/")
+        req.user = self.alice
+        ff = ma.formfield_for_foreignkey(
+            Campaign._meta.get_field("domain"), req
+        )
+        self.assertEqual(list(ff.queryset), [self.a])

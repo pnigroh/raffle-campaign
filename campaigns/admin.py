@@ -123,10 +123,23 @@ class CampaignAdmin(ModelAdmin):
     readonly_fields = ['logo_preview', 'palette_preview']
 
     def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        if request.user.is_superuser:
-            return qs
-        return qs.filter(managers=request.user)
+        return Campaign.objects.visible_to(request.user)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "domain":
+            kwargs["queryset"] = Domain.objects.visible_to(request.user)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def save_model(self, request, obj, form, change):
+        # Defense-in-depth: even if the form's queryset filter was bypassed,
+        # reject cross-tenant domain assignments here.
+        if not request.user.is_superuser:
+            if obj.domain_id not in Domain.objects.visible_to(
+                request.user
+            ).values_list("id", flat=True):
+                from django.core.exceptions import PermissionDenied
+                raise PermissionDenied("You don't manage that domain.")
+        super().save_model(request, obj, form, change)
 
     def has_change_permission(self, request, obj=None):
         if obj is None or request.user.is_superuser:
