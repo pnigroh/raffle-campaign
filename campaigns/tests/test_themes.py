@@ -159,3 +159,97 @@ class ThemeAssetServingTests(TestCase):
         c = Client()
         r = c.get("/theme-assets/does-not-exist/logo.svg")
         self.assertEqual(r.status_code, 404)
+
+
+import io
+import zipfile
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+
+
+def _build_zip(files):
+    """Build a small in-memory zip. ``files`` is dict[name -> bytes]."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for name, content in files.items():
+            zf.writestr(name, content)
+    buf.seek(0)
+    return SimpleUploadedFile("bundle.zip", buf.read(), content_type="application/zip")
+
+
+class ThemeBundleValidationTests(TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+        self._override = override_settings(THEMES_ROOT=self.tmp)
+        self._override.enable()
+        self.addCleanup(self._override.disable)
+
+    def test_valid_bundle_extracts_to_theme_directory(self):
+        from campaigns.themes_upload import extract_bundle
+        bundle = _build_zip({
+            "submission_form.html": b"<html>{{ campaign.name }}</html>",
+            "submission_success.html": b"<html>ok</html>",
+            "assets/logo.svg": b"<svg/>",
+        })
+        theme = Theme.objects.create(name="T1", slug="t1")
+        extract_bundle(bundle, theme)
+        self.assertTrue((theme.directory / "submission_form.html").is_file())
+        self.assertTrue((theme.directory / "submission_success.html").is_file())
+        self.assertTrue((theme.directory / "assets" / "logo.svg").is_file())
+
+    def test_bundle_missing_required_file_rejected(self):
+        from django.core.exceptions import ValidationError
+        from campaigns.themes_upload import validate_bundle
+        bundle = _build_zip({
+            "submission_form.html": b"<html/>",
+            # NO submission_success.html
+        })
+        with self.assertRaises(ValidationError) as cm:
+            validate_bundle(bundle)
+        self.assertIn("submission_success.html", str(cm.exception))
+
+    def test_zip_slip_rejected(self):
+        from django.core.exceptions import ValidationError
+        from campaigns.themes_upload import validate_bundle
+        bundle = _build_zip({
+            "submission_form.html": b"<html/>",
+            "submission_success.html": b"<html/>",
+            "../../../etc/passwd": b"haxx",
+        })
+        with self.assertRaises(ValidationError):
+            validate_bundle(bundle)
+
+    def test_disallowed_extension_rejected(self):
+        from django.core.exceptions import ValidationError
+        from campaigns.themes_upload import validate_bundle
+        bundle = _build_zip({
+            "submission_form.html": b"<html/>",
+            "submission_success.html": b"<html/>",
+            "assets/evil.sh": b"#!/bin/sh\nrm -rf /",
+        })
+        with self.assertRaises(ValidationError) as cm:
+            validate_bundle(bundle)
+        self.assertIn("evil.sh", str(cm.exception))
+
+    def test_reupload_replaces_directory_atomically(self):
+        from campaigns.themes_upload import extract_bundle
+        theme = Theme.objects.create(name="T2", slug="t2")
+        first = _build_zip({
+            "submission_form.html": b"first version",
+            "submission_success.html": b"<html/>",
+        })
+        extract_bundle(first, theme)
+        self.assertEqual(
+            (theme.directory / "submission_form.html").read_bytes(),
+            b"first version",
+        )
+        second = _build_zip({
+            "submission_form.html": b"SECOND version",
+            "submission_success.html": b"<html/>",
+        })
+        extract_bundle(second, theme)
+        self.assertEqual(
+            (theme.directory / "submission_form.html").read_bytes(),
+            b"SECOND version",
+        )

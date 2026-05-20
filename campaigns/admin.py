@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.utils.html import format_html
 from django.urls import reverse
 from unfold.admin import ModelAdmin, TabularInline
-from .models import Campaign, Prize, SubmissionCode, Submission, Raffle, RaffleWinner, Store
+from .models import Campaign, Prize, SubmissionCode, Submission, Raffle, RaffleWinner, Store, Theme
 
 
 def _user_managed_campaign_ids(request):
@@ -317,6 +317,52 @@ class RaffleWinnerAdmin(ModelAdmin):
         if ids is None:
             return qs
         return qs.filter(raffle__campaign_id__in=ids)
+
+
+from .themes_upload import extract_bundle
+
+
+class ThemeUploadForm(forms.ModelForm):
+    bundle = forms.FileField(
+        required=False,
+        help_text=(
+            "Upload a .zip containing submission_form.html, "
+            "submission_success.html, and an optional assets/ directory. "
+            "Max 10 MB."
+        ),
+    )
+
+    class Meta:
+        model = Theme
+        fields = ("name", "slug", "description", "is_default", "bundle")
+
+
+@admin.register(Theme)
+class ThemeAdmin(ModelAdmin):
+    form = ThemeUploadForm
+    list_display = ("name", "slug", "is_default", "created_by", "created_at")
+    search_fields = ("name", "slug", "description")
+    readonly_fields = ("created_at", "created_by")
+
+    def has_module_permission(self, request):
+        return request.user.is_superuser
+
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+        bundle = form.cleaned_data.get("bundle")
+        if bundle:
+            extract_bundle(bundle, obj)
 
 
 # ============================================================
