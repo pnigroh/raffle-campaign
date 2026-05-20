@@ -74,6 +74,17 @@ python3 manage.py runserver 0.0.0.0:8000
 
 Then visit http://localhost:8000/dashboard/.
 
+## Multi-domain dev setup
+
+Local dev runs everything through `localhost:8500`. After running migrations:
+
+- A fallback Domain `promo-domo.example` is auto-created and every existing campaign is bound to it.
+- The public submission form at `/submit/<slug>/` will 404 unless the request Host matches the campaign's domain. To test in a browser, either:
+  - Add an entry to `/etc/hosts` mapping the campaign's hostname to 127.0.0.1 and visit `http://<hostname>:8500/submit/<slug>/`.
+  - Or in Django admin, edit the Domain row for the campaign to `localhost`.
+- Dashboard and admin are not host-gated; you can always log in from `localhost:8500/dashboard/`.
+- `campaign.public_url` always returns `https://<hostname>/submit/<slug>/`. In dev this URL won't open because port 443 isn't terminated locally — this is intentional (the URL exists for operator copy/paste to a client, not for in-app navigation).
+
 ## Troubleshooting
 
 - **Port 8500 already in use** — `ss -tlnp | grep 8500` to find the offender, or pick a different `RAFFLE_CAMPAIGN_WEB_PORT`.

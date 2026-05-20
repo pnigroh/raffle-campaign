@@ -152,3 +152,12 @@ Run this annually at most. Storage cost is low enough that pruning is optional f
 ## Quarterly rehearsal
 
 Run Scenario A against a scratch host or VM. Log results in `restore-rehearsal-log.md`. If a rehearsal fails, treat it as a P0 — no backup work proceeds until restore is proven working again.
+
+## Domain hostnames during DR
+
+The `Domain.hostname` rows in the restored DB will reflect whatever was in production at the time of the snapshot. If you're restoring to a different host or temporary URL (e.g., a staging VM with a `*.staging.example` cert), the public submission forms will 404 until you either:
+
+- Edit Domain.hostname rows in the restored DB to match the new host, OR
+- Add the new host as an alias in ALLOWED_HOSTS *and* update Domain.hostname accordingly.
+
+The system check (`manage.py check`) surfaces `campaigns.W001` if any Domain.hostname is not in ALLOWED_HOSTS, which is the fastest way to catch this on the restored host. Run it explicitly — it does not fire at container startup.
