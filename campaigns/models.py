@@ -74,6 +74,14 @@ class Campaign(models.Model):
         luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
         return luminance > 0.55
 
+    theme = models.ForeignKey(
+        "Theme",
+        on_delete=models.PROTECT,
+        related_name="campaigns",
+        null=True,
+        blank=True,
+    )
+
     managers = models.ManyToManyField(
         User, blank=True, related_name='managed_campaigns',
         help_text="Users assigned here can view and manage this campaign and its submissions in the dashboard."
