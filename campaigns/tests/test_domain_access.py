@@ -281,12 +281,11 @@ class SlugChangeWarningTests(TestCase):
             **_campaign_kwargs("C", "old", self.a)
         )
 
-    def test_warning_on_slug_change(self):
-        self.client.force_login(self.su)
-        url = reverse("admin:campaigns_campaign_change", args=[self.c.id])
-        post_data = {
+    def _base_post_data(self):
+        """Return a valid admin POST dict that keeps the campaign unchanged."""
+        return {
             "name": self.c.name,
-            "slug": "new",
+            "slug": self.c.slug,
             "domain": self.a.id,
             "is_active": "on" if self.c.is_active else "",
             "start_date_0": self.c.start_date.strftime("%Y-%m-%d"),
@@ -301,9 +300,33 @@ class SlugChangeWarningTests(TestCase):
             "prizes-MIN_NUM_FORMS": "0",
             "prizes-MAX_NUM_FORMS": "1000",
         }
+
+    def test_warning_on_slug_change(self):
+        self.client.force_login(self.su)
+        url = reverse("admin:campaigns_campaign_change", args=[self.c.id])
+        post_data = self._base_post_data()
+        post_data["slug"] = "new"
         r = self.client.post(url, data=post_data, follow=True)
         messages_text = [str(m) for m in r.context["messages"]]
         self.assertTrue(
             any("Public URL changed" in m for m in messages_text),
             f"Expected 'Public URL changed' warning, got messages: {messages_text}"
         )
+
+    def test_warning_on_domain_change(self):
+        # Add a second domain the superuser can reassign to.
+        b = Domain.objects.create(hostname="b.test")
+        self.client.force_login(self.su)
+        url = reverse("admin:campaigns_campaign_change", args=[self.c.id])
+        post_data = self._base_post_data()
+        post_data["slug"] = self.c.slug   # keep slug
+        post_data["domain"] = b.id        # change domain
+        r = self.client.post(url, data=post_data, follow=True)
+        messages_text = [str(m) for m in r.context["messages"]]
+        self.assertTrue(
+            any("Public URL changed" in m for m in messages_text),
+            f"Expected 'Public URL changed' warning, got messages: {messages_text}"
+        )
+        # Verify the change persisted.
+        self.c.refresh_from_db()
+        self.assertEqual(self.c.domain_id, b.id)
