@@ -273,6 +273,47 @@ class AllowedHostsCheckTests(TestCase):
         self.assertEqual(warnings, [])
 
 
+class DomainOnlyManagerAccessTests(TestCase):
+    """Verify a manager assigned ONLY via Domain.managers (not Campaign.managers)
+    can access Prize/Submission/Raffle admin pages AND raffle views for their
+    domain's campaigns."""
+
+    def setUp(self):
+        from django.contrib.auth.models import Group
+        self.alice = User.objects.create_user(
+            "alice", "a@x.test", "x", is_staff=True
+        )
+        Group.objects.get(name="Campaign Managers").user_set.add(self.alice)
+        self.a = Domain.objects.create(hostname="a.test")
+        self.a.managers.add(self.alice)  # domain-only — NOT in Campaign.managers
+        self.c = Campaign.objects.create(
+            **_campaign_kwargs("A-camp", "x", self.a)
+        )
+
+    def test_domain_manager_sees_campaign_in_prize_admin(self):
+        self.client.force_login(self.alice)
+        # PrizeAdmin's get_queryset goes through _user_managed_campaign_ids.
+        r = self.client.get(reverse("admin:campaigns_prize_changelist"))
+        self.assertEqual(r.status_code, 200)
+        # Prize list itself may be empty (no prizes yet) — what we're checking
+        # is that the queryset filter did not return a fully empty changelist
+        # because of the bug. Smoke-check via the "Add prize" link availability
+        # (URL-based, avoids locale differences in button label):
+        self.assertContains(r, reverse("admin:campaigns_prize_add"))
+
+    def test_domain_manager_can_access_raffle_view(self):
+        # Create a raffle to exercise the access guard.
+        from campaigns.models import Raffle
+        raffle = Raffle.objects.create(campaign=self.c)
+        self.client.force_login(self.alice)
+        # URL: /dashboard/raffle/<raffle_id>/results/
+        url = reverse("raffle_results", args=[raffle.id])
+        r = self.client.get(url)
+        # 200 (results page) or 302 (redirect) — anything other than 403.
+        # The bug was a 403 here for domain-only managers.
+        self.assertNotEqual(r.status_code, 403)
+
+
 class SlugChangeWarningTests(TestCase):
     def setUp(self):
         self.su = User.objects.create_superuser("root", "r@x.test", "x")

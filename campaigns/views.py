@@ -17,12 +17,19 @@ from .utils import import_codes_from_csv, conduct_raffle, export_winners_csv, ex
 
 def _campaigns_for(user):
     """Queryset of campaigns the user may see in dashboard views."""
-    return Campaign.objects.visible_to(user)
+    return Campaign.objects.visible_to(user).select_related("domain")
 
 
 def _get_managed_campaign_or_403(user, campaign_id):
     """Return campaign if user manages it (directly or via domain), else 404."""
     return get_object_or_404(_campaigns_for(user), id=campaign_id)
+
+
+def _user_can_access_campaign(user, campaign):
+    """Return True if user is a superuser or the campaign is in their visible set."""
+    if user.is_superuser:
+        return True
+    return _campaigns_for(user).filter(pk=campaign.pk).exists()
 
 
 def _get_campaign_for_host(request, slug):
@@ -314,7 +321,7 @@ def raffle_view(request, campaign_id):
 @login_required
 def raffle_results(request, raffle_id):
     raffle = get_object_or_404(Raffle, id=raffle_id)
-    if not request.user.is_superuser and not raffle.campaign.managers.filter(id=request.user.id).exists():
+    if not _user_can_access_campaign(request.user, raffle.campaign):
         raise PermissionDenied("You don't have access to this raffle.")
     winners = raffle.winners.select_related('submission', 'prize').order_by('prize__order', 'position')
 
@@ -335,7 +342,7 @@ def raffle_results(request, raffle_id):
 @login_required
 def export_raffle_winners(request, raffle_id):
     raffle = get_object_or_404(Raffle, id=raffle_id)
-    if not request.user.is_superuser and not raffle.campaign.managers.filter(id=request.user.id).exists():
+    if not _user_can_access_campaign(request.user, raffle.campaign):
         raise PermissionDenied("You don't have access to this raffle.")
     return export_winners_csv(raffle)
 
@@ -506,9 +513,7 @@ def raffle_audit(request, raffle_id):
         Raffle.objects.select_related('campaign', 'conducted_by'),
         id=raffle_id,
     )
-    if not request.user.is_superuser and not raffle.campaign.managers.filter(
-        id=request.user.id
-    ).exists():
+    if not _user_can_access_campaign(request.user, raffle.campaign):
         raise PermissionDenied("You don't have access to this raffle.")
 
     verify_result = verify_raffle_audit(raffle)
@@ -546,9 +551,7 @@ def raffle_audit_json(request, raffle_id):
         Raffle.objects.select_related('campaign', 'conducted_by'),
         id=raffle_id,
     )
-    if not request.user.is_superuser and not raffle.campaign.managers.filter(
-        id=request.user.id
-    ).exists():
+    if not _user_can_access_campaign(request.user, raffle.campaign):
         raise PermissionDenied("You don't have access to this raffle.")
 
     verify_result = verify_raffle_audit(raffle)

@@ -11,12 +11,14 @@ from .models import Campaign, Domain, Prize, SubmissionCode, Submission, Raffle,
 def _user_managed_campaign_ids(request):
     """Return the IDs of campaigns the current user is allowed to manage.
 
-    Superusers see everything. Otherwise we use the Campaign.managers M2M:
-    a user only sees campaigns where they are listed as a manager.
+    Superusers see everything (returns None sentinel). Otherwise, routes
+    through Campaign.objects.visible_to so domain-only managers (assigned via
+    Domain.managers but not Campaign.managers directly) are also included.
     """
     if request.user.is_superuser:
         return None  # sentinel: no filter
-    return list(request.user.managed_campaigns.values_list('id', flat=True))
+    from .models import Campaign  # avoid potential circular import
+    return set(Campaign.objects.visible_to(request.user).values_list('id', flat=True))
 
 
 class CampaignScopedAdminMixin:
