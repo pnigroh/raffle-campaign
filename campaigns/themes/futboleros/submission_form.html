@@ -1,4 +1,4 @@
-{% load static %}<!DOCTYPE html>
+{% load theme_tags %}<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -9,7 +9,7 @@
   <style>
     @font-face {
       font-family: 'Andreas';
-      src: url("{% static 'campaigns/fonts/Andreas.ttf' %}") format('truetype');
+      src: url("{% theme_static 'fonts/Andreas.ttf' %}") format('truetype');
       font-weight: normal;
       font-style: normal;
       font-display: swap;
@@ -64,7 +64,7 @@
 
     /* Slide 1 uses BG_1 (with product imagery baked in). */
     .stage[data-step="welcome"] {
-      background-image: url("{% static 'campaigns/landing/bg_mobile_welcome.png' %}");
+      background-image: url("{% theme_static 'landing/bg_mobile_welcome.png' %}");
     }
 
     /* All others use the blurred stadium BG. */
@@ -72,12 +72,12 @@
     .stage[data-step="trivia"],
     .stage[data-step="success"],
     .stage[data-step="fail"] {
-      background-image: url("{% static 'campaigns/landing/bg_mobile_steps.png' %}");
+      background-image: url("{% theme_static 'landing/bg_mobile_steps.png' %}");
     }
 
     @media (min-width: 768px) {
       body {
-        background: #0e6dc2 url("{% static 'campaigns/landing/bg_desktop.png' %}") center center / cover no-repeat fixed;
+        background: #0e6dc2 url("{% theme_static 'landing/bg_desktop.png' %}") center center / cover no-repeat fixed;
         overflow-x: hidden;
         padding: 0;
         display: block;
@@ -562,7 +562,7 @@
   {% else %}
 
   <!-- Brand logo: a single element, controlled by CSS per viewport + step -->
-  <img class="brand-logo" src="{% static 'campaigns/landing/logo_nube.png' %}"
+  <img class="brand-logo" src="{% theme_static 'landing/logo_nube.png' %}"
        alt="La Nube que te mueve... y te lleva al gol">
 
   <!-- Step 1: Welcome -->
@@ -687,7 +687,7 @@
 
   <!-- Step 4: Success -->
   <section class="step" data-step="success">
-    <img class="titular" src="{% static 'campaigns/landing/titular_crack.png' %}" alt="¡Eres un crack!">
+    <img class="titular" src="{% theme_static 'landing/titular_crack.png' %}" alt="¡Eres un crack!">
     <div class="card result-card">
       <p>Esperamos que pronto cantes tu gol.</p>
       <button type="button" class="btn btn-wide" data-finalize>FINALIZAR</button>
@@ -696,7 +696,7 @@
 
   <!-- Step 5: Fail -->
   <section class="step" data-step="fail">
-    <img class="titular" src="{% static 'campaigns/landing/titular_fallaste.png' %}" alt="¡Fallaste!">
+    <img class="titular" src="{% theme_static 'landing/titular_fallaste.png' %}" alt="¡Fallaste!">
     <div class="card result-card">
       <p>Pero sigue jugando con nosotros.</p>
       <button type="button" class="btn btn-wide" data-finalize>FINALIZAR</button>

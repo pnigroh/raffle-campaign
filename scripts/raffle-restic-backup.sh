@@ -19,6 +19,7 @@ mkdir -p /var/log/raffle
         --tag nightly \
         --host raffle-prod \
         /srv/raffle/media \
-        /srv/raffle/pgbackrest
+        /srv/raffle/pgbackrest \
+        /srv/raffle/themes
     echo "===== $(date -Iseconds) backup end ====="
 } >> "$LOG" 2>&1

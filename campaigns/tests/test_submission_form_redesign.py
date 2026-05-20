@@ -50,8 +50,8 @@ class SubmissionFormRedesignWelcomeTests(TestCase):
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         body = resp.content.decode()
-        # New welcome BG referenced (bike + sky + stadium, no overlays)
-        self.assertIn("campaigns/landing/bg_mobile_welcome.png", body)
+        # New welcome BG referenced via theme-assets URL (bike + sky + stadium, no overlays)
+        self.assertIn("theme-assets/futboleros/landing/bg_mobile_welcome.png", body)
         # Legacy GOOOOL composition assets are gone — only ¡BIENVENIDO! + EMPEZAR remain
         self.assertNotIn("campaigns/img/goool.png", body)
         self.assertNotIn("campaigns/img/con.png", body)
@@ -95,15 +95,15 @@ class SubmissionFormRedesignTitularsTests(TestCase):
     def test_success_and_fail_use_new_titulars(self):
         url = reverse("submission_form", kwargs={"campaign_slug": self.campaign.slug})
         body = self.client.get(url).content.decode()
-        self.assertIn("campaigns/landing/titular_crack.png", body)
-        self.assertIn("campaigns/landing/titular_fallaste.png", body)
+        self.assertIn("theme-assets/futboleros/landing/titular_crack.png", body)
+        self.assertIn("theme-assets/futboleros/landing/titular_fallaste.png", body)
         self.assertNotIn("campaigns/img/title_crack.png", body)
         self.assertNotIn("campaigns/img/title_fallaste.png", body)
 
     def test_steps_use_new_blurred_stadium_bg(self):
         url = reverse("submission_form", kwargs={"campaign_slug": self.campaign.slug})
         body = self.client.get(url).content.decode()
-        self.assertIn("campaigns/landing/bg_mobile_steps.png", body)
+        self.assertIn("theme-assets/futboleros/landing/bg_mobile_steps.png", body)
         self.assertNotIn("campaigns/img/bg_2.webp", body)
 
 
@@ -114,9 +114,9 @@ class SubmissionFormRedesignDesktopTests(TestCase):
 
     def test_desktop_bg_referenced_in_response(self):
         # The inline <style> block contains the desktop media query that
-        # references bg_desktop.png as the body background.
+        # references bg_desktop.png as the body background (via theme-assets URL).
         url = reverse("submission_form", kwargs={"campaign_slug": self.campaign.slug})
         body = self.client.get(url).content.decode()
-        self.assertIn("campaigns/landing/bg_desktop.png", body)
+        self.assertIn("theme-assets/futboleros/landing/bg_desktop.png", body)
         # And the desktop breakpoint is at 768px
         self.assertIn("min-width: 768px", body)

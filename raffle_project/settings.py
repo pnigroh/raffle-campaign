@@ -132,6 +132,11 @@ STATICFILES_DIRS = []
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# Themes root — campaign public-facing templates are served from here
+THEMES_ROOT = os.environ.get(
+    "THEMES_ROOT", str(BASE_DIR / "themes")
+)
+
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

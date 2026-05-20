@@ -1,7 +1,11 @@
+import shutil
+import uuid
+
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 from django.utils.text import slugify
-import uuid
 
 
 class Campaign(models.Model):
@@ -36,6 +40,13 @@ class Campaign(models.Model):
     sidebar_color = models.CharField(
         max_length=7, blank=True,
         help_text="Sidebar background color (hex, e.g. #1a2035). Optional. Falls back to a dark default if blank."
+    )
+    theme = models.ForeignKey(
+        "Theme",
+        on_delete=models.PROTECT,
+        related_name="campaigns",
+        null=True,
+        blank=True,
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -274,3 +285,59 @@ class RaffleWinner(models.Model):
 
     def __str__(self):
         return f"{self.submission.full_name} won {self.prize.name}"
+
+
+class Theme(models.Model):
+    name = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True)
+    description = models.CharField(max_length=500, blank=True)
+    is_default = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        "auth.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="themes_created",
+    )
+
+    class Meta:
+        ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["is_default"],
+                condition=models.Q(is_default=True),
+                name="only_one_default_theme",
+            ),
+        ]
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def directory(self):
+        from pathlib import Path
+        from django.conf import settings as dj_settings
+        return Path(dj_settings.THEMES_ROOT) / self.slug
+
+    def save(self, *args, **kwargs):
+        if self.is_default:
+            Theme.objects.filter(is_default=True).exclude(pk=self.pk).update(
+                is_default=False
+            )
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_default(cls):
+        return cls.objects.get(is_default=True)
+
+
+@receiver(post_delete, sender=Theme)
+def _remove_theme_directory(sender, instance, **kwargs):
+    """When a Theme row is deleted, remove its on-disk directory.
+
+    Protected by Campaign.theme's on_delete=PROTECT: deletion only fires
+    when no Campaign references the theme.
+    """
+    if instance.directory.exists():
+        shutil.rmtree(instance.directory)

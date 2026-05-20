@@ -9,7 +9,7 @@ from django.db.models import Count, Q, Max
 from django.http import JsonResponse, HttpResponseRedirect
 import json
 
-from .models import Campaign, Prize, Submission, SubmissionCode, Raffle, RaffleWinner
+from .models import Campaign, Prize, Submission, SubmissionCode, Raffle, RaffleWinner, Theme
 from .forms import SubmissionForm, RaffleSegmentForm, CodeImportForm, PrizeForm
 from .utils import import_codes_from_csv, conduct_raffle, export_winners_csv, export_submissions_csv
 
@@ -28,6 +28,26 @@ def _get_managed_campaign_or_403(user, campaign_id):
         return user.managed_campaigns.get(id=campaign_id)
     except Campaign.DoesNotExist:
         raise PermissionDenied("You don't have access to this campaign.")
+
+
+def _render_theme_template(request, campaign, template_name, context):
+    """Render a theme template from disk for the given campaign.
+
+    Uses ``campaign.theme`` if set, else the default Theme. Adds ``theme``
+    to the context. Raises Http404 if the theme's template file is missing.
+    """
+    from django.http import Http404, HttpResponse
+    from django.template import engines
+
+    theme = campaign.theme or Theme.get_default()
+    tpl_path = theme.directory / template_name
+    if not tpl_path.is_file():
+        raise Http404
+    template = engines["django"].from_string(
+        tpl_path.read_text(encoding="utf-8")
+    )
+    context["theme"] = theme
+    return HttpResponse(template.render(context, request))
 
 
 def submission_form(request, campaign_slug):
@@ -63,7 +83,7 @@ def submission_form(request, campaign_slug):
     else:
         form = SubmissionForm(campaign=campaign)
 
-    return render(request, 'campaigns/submission_form.html', {
+    return _render_theme_template(request, campaign, "submission_form.html", {
         'campaign': campaign,
         'form': form,
         'campaign_open': campaign_open,
@@ -72,7 +92,7 @@ def submission_form(request, campaign_slug):
 
 def submission_success(request, campaign_slug):
     campaign = get_object_or_404(Campaign, slug=campaign_slug)
-    return render(request, 'campaigns/submission_success.html', {'campaign': campaign})
+    return _render_theme_template(request, campaign, "submission_success.html", {'campaign': campaign})
 
 
 def submission_form_preview(request, campaign_slug, variant):
@@ -81,7 +101,7 @@ def submission_form_preview(request, campaign_slug, variant):
         raise Http404("Unknown preview variant")
     campaign = get_object_or_404(Campaign, slug=campaign_slug)
     form = SubmissionForm(campaign=campaign)
-    return render(request, f'campaigns/_proposals/form_{variant}.html', {
+    return _render_theme_template(request, campaign, "submission_form.html", {
         'campaign': campaign,
         'form': form,
         'campaign_open': True,

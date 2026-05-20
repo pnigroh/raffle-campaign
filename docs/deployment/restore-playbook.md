@@ -149,6 +149,14 @@ restic forget --keep-daily 14 --keep-weekly 8 --keep-monthly 24 --keep-yearly 10
 
 Run this annually at most. Storage cost is low enough that pruning is optional for years.
 
+## Themes during restore
+
+`/srv/raffle/themes/` is backed up by restic alongside `/srv/raffle/media/`. After a restore:
+
+1. Verify `/srv/raffle/themes/futboleros/` exists and contains the expected files.
+2. If missing, run `docker exec raffle-prod python manage.py setup_default_theme --force` to repopulate from the in-repo source.
+3. Verify any custom themes you've uploaded are present. If not, re-upload from your offline copy (themes other than the default are NOT in git).
+
 ## Quarterly rehearsal
 
 Run Scenario A against a scratch host or VM. Log results in `restore-rehearsal-log.md`. If a rehearsal fails, treat it as a P0 — no backup work proceeds until restore is proven working again.

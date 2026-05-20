@@ -21,6 +21,11 @@ staticfiles/
 media/
 db.sqlite3
 
+# Theme bundles extracted to <THEMES_ROOT> at migrate time (dev default <repo>/themes/).
+# The in-repo source of the default theme lives at campaigns/themes/futboleros/ and is
+# tracked normally; the runtime mirror at the repo root is not.
+/themes/
+
 # IDE
 .vscode/
 .idea/

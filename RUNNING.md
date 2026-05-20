@@ -74,6 +74,21 @@ python3 manage.py runserver 0.0.0.0:8000
 
 Then visit http://localhost:8000/dashboard/.
 
+## Themes (local dev)
+
+The public submission form and success page render from a theme bundle, not directly from `campaigns/templates/`. Local dev uses `<repo>/themes/<slug>/` as `THEMES_ROOT`.
+
+After `migrate` runs the first time, the default Futboleros theme is auto-populated at `<repo>/themes/futboleros/`. If you wipe the directory, restore it with:
+
+```bash
+docker exec raffle-web python manage.py setup_default_theme
+```
+
+To test a custom theme without going through the upload UI:
+1. Build the bundle layout at `<repo>/themes/<my-slug>/{submission_form.html, submission_success.html, assets/}`.
+2. Create the Theme row: `docker exec -it raffle-web python manage.py shell` → `from campaigns.models import Theme; Theme.objects.create(name="X", slug="my-slug")`.
+3. Assign a Campaign to it in admin.
+
 ## Troubleshooting
 
 - **Port 8500 already in use** — `ss -tlnp | grep 8500` to find the offender, or pick a different `RAFFLE_CAMPAIGN_WEB_PORT`.
