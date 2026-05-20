@@ -139,6 +139,15 @@ class CampaignAdmin(ModelAdmin):
                 request.user
             ).values_list("id", flat=True):
                 raise PermissionDenied("You don't manage that domain.")
+
+        if change:
+            old = Campaign.objects.get(pk=obj.pk)
+            if old.slug != obj.slug or old.domain_id != obj.domain_id:
+                messages.warning(
+                    request,
+                    "Public URL changed; previously distributed links no "
+                    "longer work.",
+                )
         super().save_model(request, obj, form, change)
 
     def has_change_permission(self, request, obj=None):

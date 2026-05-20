@@ -271,3 +271,39 @@ class AllowedHostsCheckTests(TestCase):
         from campaigns.checks import domains_in_allowed_hosts
         warnings = domains_in_allowed_hosts(app_configs=None)
         self.assertEqual(warnings, [])
+
+
+class SlugChangeWarningTests(TestCase):
+    def setUp(self):
+        self.su = User.objects.create_superuser("root", "r@x.test", "x")
+        self.a = Domain.objects.create(hostname="a.test")
+        self.c = Campaign.objects.create(
+            **_campaign_kwargs("C", "old", self.a)
+        )
+
+    def test_warning_on_slug_change(self):
+        self.client.force_login(self.su)
+        url = reverse("admin:campaigns_campaign_change", args=[self.c.id])
+        post_data = {
+            "name": self.c.name,
+            "slug": "new",
+            "domain": self.a.id,
+            "is_active": "on" if self.c.is_active else "",
+            "start_date_0": self.c.start_date.strftime("%Y-%m-%d"),
+            "start_date_1": self.c.start_date.strftime("%H:%M:%S"),
+            "end_date_0": self.c.end_date.strftime("%Y-%m-%d"),
+            "end_date_1": self.c.end_date.strftime("%H:%M:%S"),
+            "validate_submission_code": "",
+            "allow_multiple_submissions": "",
+            # Inline management form for PrizeInline (prefix is "prizes")
+            "prizes-TOTAL_FORMS": "0",
+            "prizes-INITIAL_FORMS": "0",
+            "prizes-MIN_NUM_FORMS": "0",
+            "prizes-MAX_NUM_FORMS": "1000",
+        }
+        r = self.client.post(url, data=post_data, follow=True)
+        messages_text = [str(m) for m in r.context["messages"]]
+        self.assertTrue(
+            any("Public URL changed" in m for m in messages_text),
+            f"Expected 'Public URL changed' warning, got messages: {messages_text}"
+        )
