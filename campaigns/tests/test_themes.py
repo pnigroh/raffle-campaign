@@ -137,3 +137,25 @@ class ThemeDeleteSignalTests(TestCase):
         )
         with self.assertRaises(ProtectedError):
             t.delete()
+
+
+from django.test import Client
+
+
+class ThemeAssetServingTests(TestCase):
+    def test_dev_serves_existing_asset(self):
+        # The seeded Futboleros theme has assets/fonts/Andreas.ttf (Task 4).
+        c = Client()
+        r = c.get("/theme-assets/futboleros/fonts/Andreas.ttf")
+        self.assertEqual(r.status_code, 200)
+        self.assertGreater(int(r["Content-Length"]), 1000)  # font is sizeable
+
+    def test_dev_404s_missing_asset(self):
+        c = Client()
+        r = c.get("/theme-assets/futboleros/nope.png")
+        self.assertEqual(r.status_code, 404)
+
+    def test_dev_404s_unknown_theme(self):
+        c = Client()
+        r = c.get("/theme-assets/does-not-exist/logo.svg")
+        self.assertEqual(r.status_code, 404)
