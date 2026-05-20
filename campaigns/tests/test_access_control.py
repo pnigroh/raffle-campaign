@@ -3,7 +3,7 @@
 Pins down the behavior of `Campaign.managers` scoping at the view layer:
 - Authenticated managers can only see/edit campaigns they're listed on.
 - Superusers bypass the filter.
-- Cross-campaign attempts return 403 (PermissionDenied), not 404.
+- Cross-campaign attempts return 404 (get_object_or_404 semantics, no info leak).
 """
 
 from datetime import timedelta
@@ -93,7 +93,7 @@ class ViewLayerAccessTests(TestCase):
     def test_campaign_detail_non_manager_gets_403(self):
         self.client.force_login(self.alice)
         resp = self.client.get(reverse("campaign_detail", args=[self.camp_y.id]))
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 404)
 
     def test_campaign_detail_superuser_can_view_any(self):
         self.client.force_login(self.charlie)
@@ -108,7 +108,7 @@ class ViewLayerAccessTests(TestCase):
             reverse("submission_set_validity", args=[self.camp_y.id, self.sub_y.id]),
             data={"action": "invalidate"},
         )
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 404)
         # Submission state unchanged
         self.sub_y.refresh_from_db()
         self.assertTrue(self.sub_y.is_valid)
@@ -118,28 +118,28 @@ class ViewLayerAccessTests(TestCase):
     def test_export_submissions_non_manager_gets_403(self):
         self.client.force_login(self.alice)
         resp = self.client.get(reverse("export_submissions", args=[self.camp_y.id]))
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 404)
 
     # ---------- raffle_view ----------
 
     def test_raffle_view_non_manager_gets_403(self):
         self.client.force_login(self.alice)
         resp = self.client.get(reverse("raffle", args=[self.camp_y.id]))
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 404)
 
     # ---------- import_codes_view ----------
 
     def test_import_codes_non_manager_gets_403(self):
         self.client.force_login(self.alice)
         resp = self.client.get(reverse("import_codes", args=[self.camp_y.id]))
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 404)
 
     # ---------- ajax_filter_count ----------
 
     def test_ajax_filter_count_non_manager_gets_403(self):
         self.client.force_login(self.alice)
         resp = self.client.get(reverse("ajax_filter_count", args=[self.camp_y.id]))
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 404)
 
     # ---------- raffle_results ----------
 

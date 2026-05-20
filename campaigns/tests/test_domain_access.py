@@ -217,3 +217,33 @@ class CampaignAdminScopingTests(TestCase):
             Campaign._meta.get_field("domain"), req
         )
         self.assertEqual(list(ff.queryset), [self.a])
+
+
+class DashboardScopingTests(TestCase):
+    def setUp(self):
+        self.alice = User.objects.create_user(
+            "alice", "a@x.test", "x", is_staff=True
+        )
+        from django.contrib.auth.models import Group
+        Group.objects.get(name="Campaign Managers").user_set.add(self.alice)
+        self.a = Domain.objects.create(hostname="a.test")
+        self.b = Domain.objects.create(hostname="b.test")
+        self.a.managers.add(self.alice)
+        self.c_a = Campaign.objects.create(
+            **_campaign_kwargs("AliceCampaign", "ac", self.a)
+        )
+        self.c_b = Campaign.objects.create(
+            **_campaign_kwargs("BobCampaign", "bc", self.b)
+        )
+
+    def test_domain_manager_sees_domain_campaigns_in_dashboard(self):
+        self.client.force_login(self.alice)
+        r = self.client.get("/dashboard/")
+        self.assertContains(r, "AliceCampaign")
+        self.assertNotContains(r, "BobCampaign")
+
+    def test_id_guess_to_other_tenant_returns_404(self):
+        self.client.force_login(self.alice)
+        url = f"/dashboard/campaign/{self.c_b.id}/"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 404)

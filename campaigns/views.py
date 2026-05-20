@@ -16,19 +16,13 @@ from .utils import import_codes_from_csv, conduct_raffle, export_winners_csv, ex
 
 
 def _campaigns_for(user):
-    """Queryset of campaigns the user can manage (superusers see all)."""
-    if user.is_superuser:
-        return Campaign.objects.all()
-    return user.managed_campaigns.all()
+    """Queryset of campaigns the user may see in dashboard views."""
+    return Campaign.objects.visible_to(user)
 
 
 def _get_managed_campaign_or_403(user, campaign_id):
-    if user.is_superuser:
-        return get_object_or_404(Campaign, id=campaign_id)
-    try:
-        return user.managed_campaigns.get(id=campaign_id)
-    except Campaign.DoesNotExist:
-        raise PermissionDenied("You don't have access to this campaign.")
+    """Return campaign if user manages it (directly or via domain), else 404."""
+    return get_object_or_404(_campaigns_for(user), id=campaign_id)
 
 
 def _get_campaign_for_host(request, slug):
