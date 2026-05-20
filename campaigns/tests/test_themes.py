@@ -351,3 +351,36 @@ class CampaignAdminThemeDropdownTests(TestCase):
         )
         self.assertContains(r, "id_theme")
         self.assertContains(r, "Futboleros (Mundial 2026)")
+
+
+from io import StringIO
+from django.core.management import call_command
+
+
+class SetupDefaultThemeCommandTests(TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+        self._override = override_settings(THEMES_ROOT=self.tmp)
+        self._override.enable()
+        self.addCleanup(self._override.disable)
+
+    def test_command_populates_directory(self):
+        out = StringIO()
+        call_command("setup_default_theme", stdout=out)
+        self.assertTrue((Path(self.tmp) / "futboleros" / "submission_form.html").is_file())
+
+    def test_command_is_idempotent_without_force(self):
+        call_command("setup_default_theme")
+        target = Path(self.tmp) / "futboleros" / "submission_form.html"
+        target.write_text("MUTATED")
+        call_command("setup_default_theme")
+        # Without --force, the mutated content is preserved.
+        self.assertEqual(target.read_text(), "MUTATED")
+
+    def test_force_refreshes(self):
+        call_command("setup_default_theme")
+        target = Path(self.tmp) / "futboleros" / "submission_form.html"
+        target.write_text("MUTATED")
+        call_command("setup_default_theme", "--force")
+        self.assertNotEqual(target.read_text(), "MUTATED")
