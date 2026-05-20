@@ -15,6 +15,8 @@ User = get_user_model()
 
 
 def _campaign(name="Test", slug="test", manager=None):
+    from campaigns.models import Domain
+    domain = Domain.objects.get_or_create(hostname="localhost")[0]
     now = timezone.now()
     c = Campaign.objects.create(
         name=name,
@@ -25,6 +27,7 @@ def _campaign(name="Test", slug="test", manager=None):
         is_active=True,
         validate_submission_code=False,
         allow_multiple_submissions=False,
+        domain=domain,
     )
     if manager:
         c.managers.add(manager)
@@ -345,7 +348,7 @@ class RestoreEligibilityTests(TestCase):
                     args=[self.camp_y.id, self.sub_y.id]),
             data={"reason": "tampering"},
         )
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 404)
         self.sub_y.refresh_from_db()
         self.assertIsNotNone(self.sub_y.participated_at)  # unchanged
 

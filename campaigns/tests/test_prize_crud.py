@@ -17,6 +17,8 @@ User = get_user_model()
 
 
 def _campaign(name, slug, manager=None):
+    from campaigns.models import Domain
+    domain = Domain.objects.get_or_create(hostname="localhost")[0]
     now = timezone.now()
     c = Campaign.objects.create(
         name=name,
@@ -27,6 +29,7 @@ def _campaign(name, slug, manager=None):
         is_active=True,
         validate_submission_code=False,
         allow_multiple_submissions=False,
+        domain=domain,
     )
     if manager:
         c.managers.add(manager)
@@ -91,7 +94,7 @@ class PrizeAddTests(TestCase):
             reverse("prize_add", args=[self.camp_y.id]),
             data={"name": "Hijack", "description": "", "quantity": 1, "order": 0},
         )
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 404)
         self.assertFalse(Prize.objects.filter(name="Hijack").exists())
 
     def test_prize_add_get_returns_405(self):
@@ -133,7 +136,7 @@ class PrizeEditTests(TestCase):
             reverse("prize_edit", args=[self.camp_y.id, self.prize_y.id]),
             data={"name": "Hijacked", "description": "", "quantity": 1, "order": 0},
         )
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 404)
         self.prize_y.refresh_from_db()
         self.assertEqual(self.prize_y.name, "Bob's prize")
 
@@ -185,7 +188,7 @@ class PrizeDeleteTests(TestCase):
         resp = self.client.post(
             reverse("prize_delete", args=[self.camp_y.id, self.prize_y.id])
         )
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 404)
         self.assertTrue(Prize.objects.filter(id=self.prize_y.id).exists())
 
     def test_prize_delete_get_returns_405(self):

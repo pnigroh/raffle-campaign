@@ -109,8 +109,8 @@
           </div>
           <div>
             <span class="text-muted">{% trans "URL de participación:" %}</span>
-            <a href="/submit/{{ campaign.slug }}/" class="ms-1 text-primary" target="_blank">
-              /submit/{{ campaign.slug }}/ <i class="bi bi-box-arrow-up-right ms-1" style="font-size:0.75rem;"></i>
+            <a href="{{ campaign.public_url }}" class="ms-1 text-primary" target="_blank">
+              {{ campaign.public_url }} <i class="bi bi-box-arrow-up-right ms-1" style="font-size:0.75rem;"></i>
             </a>
           </div>
         </div>

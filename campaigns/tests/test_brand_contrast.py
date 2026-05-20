@@ -20,6 +20,8 @@ User = get_user_model()
 
 
 def _campaign(**kwargs):
+    from campaigns.models import Domain
+    domain = kwargs.pop("domain", None) or Domain.objects.get_or_create(hostname="localhost")[0]
     now = timezone.now()
     defaults = dict(
         name="Test", slug="test", description="x",
@@ -28,6 +30,7 @@ def _campaign(**kwargs):
         is_active=True,
         validate_submission_code=False,
         allow_multiple_submissions=False,
+        domain=domain,
     )
     defaults.update(kwargs)
     return Campaign.objects.create(**defaults)
