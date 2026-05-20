@@ -2,10 +2,12 @@ from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.db import IntegrityError
-from django.test import TestCase
+from django.http import Http404
+from django.test import RequestFactory, TestCase, override_settings
 from django.utils import timezone
 
 from campaigns.models import Campaign, Domain
+from campaigns.views import _get_campaign_for_host
 
 
 class DomainModelTests(TestCase):
@@ -79,12 +81,6 @@ class CampaignDomainTests(TestCase):
         other = User.objects.create_user("other", "o@x.test", "x")
         self.b.managers.add(other)
         self.assertEqual(Campaign.objects.visible_to(other).count(), 0)
-
-
-from django.http import Http404
-from django.test import RequestFactory, override_settings
-
-from campaigns.views import _get_campaign_for_host
 
 
 @override_settings(ALLOWED_HOSTS=["*"])

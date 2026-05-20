@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.db.models import Count, Q, Max
 from django.http import JsonResponse, HttpResponseRedirect
+from django.http.request import split_domain_port
 import json
 
 from .models import Campaign, Prize, Submission, SubmissionCode, Raffle, RaffleWinner
@@ -33,12 +34,12 @@ def _get_managed_campaign_or_403(user, campaign_id):
 def _get_campaign_for_host(request, slug):
     """Look up an active campaign bound to the request's host.
 
-    Returns the Campaign or raises Http404. The host portion of
-    ``request.get_host()`` is split on ``:`` because the reverse proxy
-    terminates TLS and may forward ``a.test:8500`` in dev. We never
+    Returns the Campaign or raises Http404. The host portion is parsed
+    via Django's split_domain_port so IPv6 literals (``[::1]:8500``) and
+    IPv4-with-port (``a.test:8500``) both resolve correctly. We never
     expose port numbers in Domain.hostname.
     """
-    host = request.get_host().split(":")[0]
+    host, _port = split_domain_port(request.get_host())
     return get_object_or_404(
         Campaign,
         domain__hostname=host,
