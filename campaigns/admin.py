@@ -123,6 +123,13 @@ class CampaignAdmin(ModelAdmin):
     )
     readonly_fields = ['logo_preview', 'palette_preview']
 
+    view_on_site = True
+
+    def get_view_on_site_url(self, obj=None):
+        if obj is None:
+            return None
+        return obj.public_url
+
     def get_queryset(self, request):
         return Campaign.objects.visible_to(request.user)
 
