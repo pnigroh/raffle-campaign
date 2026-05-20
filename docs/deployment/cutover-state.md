@@ -2,9 +2,9 @@
 
 > **What this is:** a single-page operator log that tracks the in-flight cutover from SQLite to the new Postgres + B2 backup stack. Updated as we go. Will be deleted (or archived under `docs/deployment/history/`) once the cutover is fully complete and the first restore rehearsal is logged.
 
-**Status:** Paused — waiting on Backblaze B2 registration to come back online.
-**Last updated:** 2026-05-13
-**Branch:** `zero-data-loss-backup` (PR #1: https://github.com/pnigroh/raffle-campaign/pull/1)
+**Status:** Code merged + B2 provisioned. Awaiting operator SSH for Phases D–J.
+**Last updated:** 2026-05-20
+**Branch:** merged to `main` 2026-05-19 via PR #1 (squash `9755eac`). Local branch `zero-data-loss-backup` deleted; the original 19-commit branch is still at `origin/zero-data-loss-backup` for archaeology.
 **Authoritative plan:** [`docs/superpowers/plans/2026-05-13-zero-data-loss-backup.md`](../superpowers/plans/2026-05-13-zero-data-loss-backup.md)
 **Authoritative spec:** [`docs/superpowers/specs/2026-05-13-zero-data-loss-backup-design.md`](../superpowers/specs/2026-05-13-zero-data-loss-backup-design.md)
 
@@ -14,9 +14,9 @@
 
 If you only have 60 seconds, read these three things:
 
-1. **Next concrete step:** Backblaze B2 registration / sign-in at https://secure.backblaze.com → continue from "Phase B: B2 setup" below.
-2. **Nothing on prod has been touched yet.** The local dev tree has 19 commits on `zero-data-loss-backup`; PR #1 is open. Prod is still running the legacy SQLite single-service compose.
-3. **The architecture changed during dev** — the original 4-service design had a `pgbackrest` sidecar, but smoke testing proved it can't reach Postgres-in-another-container. The branch now uses 3 services: `postgres` (with cron + pgBackRest inside), `web`, `media-syncer`. The spec, plan, and playbook were all updated to match.
+1. **Next concrete step:** Phase D — provision `/srv/raffle/...` on the prod host. B2 buckets are already created (suffix `rafi`, region `us-east-005`); the six secrets are in the password manager. Phase A is a 30-second sanity check; Phase B+C are already done.
+2. **Nothing on prod has been touched yet.** PR #1 is merged into `main`. Prod is still running the legacy SQLite single-service compose. The next SSH window is the cutover.
+3. **The architecture changed during dev** — the original 4-service design had a `pgbackrest` sidecar, but smoke testing proved it can't reach Postgres-in-another-container. The merged code uses 3 services: `postgres` (with cron + pgBackRest inside), `web`, `media-syncer`. The spec, plan, and playbook were all updated to match.
 
 ---
 
@@ -35,7 +35,7 @@ If you only have 60 seconds, read these three things:
 | 7. sequence-reset helper + test | ✅ | `7fca4ac` |
 | 8. SQLite→Postgres migration script | ✅ | `97bbacb`, `ce97bc9` (precount.txt fix) |
 | 9. Local end-to-end smoke test | ✅ | (verification only; bugs fixed via `bcf16b6` + `31a9de5`) |
-| 10. **B2 console setup** | **PAUSED** | — |
+| 10. B2 console setup | ✅ | buckets provisioned 2026-05-19 — suffix `rafi`, region `us-east-005`, endpoint `s3.us-east-005.backblazeb2.com`. 3 keys in password manager. |
 | 11. /srv/raffle/... on prod | — | — |
 | 12. Credential files on prod | — | — |
 | 13. First Postgres boot on prod | — | — |
@@ -47,7 +47,7 @@ If you only have 60 seconds, read these three things:
 | 19. Restore playbook + rehearsal log | ✅ | `7bd5992`, `e0f8593` |
 | 20. First restore rehearsal | — | — |
 | 21. Decommission prod-data/ | ✅ | `7271dec` |
-| 22. Open PR for dev-side changes | ✅ | PR #1 |
+| 22. Open PR for dev-side changes | ✅ | PR #1 (merged 2026-05-19, squash `9755eac`) |
 
 ### Local smoke test results (Task 9)
 
@@ -100,62 +100,39 @@ P00  ERROR: [042]: unable to read '/etc/pgbackrest/pgbackrest.conf': [21] Is a d
 # On dev machine:
 cd /home/elgran/Projects/raffle-campaign
 git fetch origin
-git checkout zero-data-loss-backup
+git checkout main
 git pull
-git log main..HEAD --oneline | head    # confirm 19 commits ahead of main
+git log -1 --oneline                    # expect the squash merge 9755eac (or later)
 .venv/bin/python -m pytest              # confirm 122 tests still pass
 ```
 
-If any test fails or commits look unexpected, stop and investigate before continuing.
+If any test fails or commits look unexpected, stop and investigate before continuing. The original 19-commit branch is preserved at `origin/zero-data-loss-backup` if you need to inspect individual commits referenced in this document.
 
-### Phase B: B2 setup (Task 10)
+### Phase B: B2 setup (Task 10) — ✅ done 2026-05-19
 
-Once https://secure.backblaze.com is back online:
+Buckets, keys, and the two offline secrets are all provisioned. **Confirm the values are still in the password manager before continuing to Phase D.**
 
-1. **Sign in / register.** Free tier is fine; storage cost for our data sizes is pennies/month.
+| What was provisioned | Value |
+|---|---|
+| Bucket suffix | `rafi` |
+| Region | `us-east-005` |
+| S3 endpoint | `s3.us-east-005.backblazeb2.com` |
+| Bucket names | `raffle-pgbackrest-rafi`, `raffle-media-rafi`, `raffle-archive-rafi` |
+| 90-day version retention | enabled on `raffle-media-rafi` only |
+| Application keys (3) | `raffle-pgbackrest-rw`, `raffle-media-rw-nodelete`, `raffle-archive-append-only` |
+| Offline secrets (2) | `repo2-cipher-pass`, restic passphrase |
 
-2. **Pick a globally-unique 6-character suffix** (e.g., your initials + 4 random digits — `pn4f9k`). Use it for all three buckets.
+The keyIDs + applicationKeys + the two offline secrets are stored **only** in the user's password manager under:
 
-3. **Create the three buckets.** Buckets → Create a Bucket. Repeat for each:
+- `raffle / B2 / pgbackrest` — keyID, applicationKey, bucket=`raffle-pgbackrest-rafi`, endpoint=`s3.us-east-005.backblazeb2.com`, `repo2-cipher-pass`
+- `raffle / B2 / media` — keyID, applicationKey, bucket=`raffle-media-rafi`
+- `raffle / B2 / archive` — keyID, applicationKey, bucket=`raffle-archive-rafi`, **restic passphrase**
 
-   | Bucket name | Files in Bucket | Default Encryption | Object Lock |
-   |---|---|---|---|
-   | `raffle-pgbackrest-<suffix>` | Private | Enable (SSE-B2) | Disable |
-   | `raffle-media-<suffix>` | Private | Enable (SSE-B2) | Disable |
-   | `raffle-archive-<suffix>` | Private | Enable (SSE-B2) | Disable |
+These six entries are the **only secrets needed to restore from scratch**. The original step-by-step Backblaze setup (key capabilities, lifecycle rule, etc.) is preserved in commit `f71af79` if you ever need to recreate the buckets — see git history for this file.
 
-4. **Enable 90-day version retention on the media bucket only.** Click `raffle-media-<suffix>` → Lifecycle Settings → "Use a custom lifecycle rule" → set "Keep prior versions of files for this many days: **90**" → Save.
+### Phase C: merge timing — ✅ done
 
-5. **Create three application keys** (App Keys → Add a New Application Key). Each key is scoped to a single bucket. **Capabilities are critical for the anti-ransomware property — get them right:**
-
-   | Key name | Bucket | Capabilities | NOT included |
-   |---|---|---|---|
-   | `raffle-pgbackrest-rw` | `raffle-pgbackrest-<suffix>` | listBuckets, listFiles, readFiles, **writeFiles, deleteFiles** | — |
-   | `raffle-media-rw-nodelete` | `raffle-media-<suffix>` | listBuckets, listFiles, readFiles, **writeFiles** | **deleteFiles** |
-   | `raffle-archive-append-only` | `raffle-archive-<suffix>` | listBuckets, listFiles, readFiles, **writeFiles** | **deleteFiles** |
-
-   For each key, B2 displays the `keyID` and `applicationKey` **exactly once**. Save them to your password manager *immediately*. The `applicationKey` value cannot be recovered later — if you lose it, you delete the key and make a new one.
-
-6. **Generate two more secrets in your password manager** (independent of B2):
-   - **`repo2-cipher-pass`** — `openssl rand -hex 32` — pgBackRest uses this to encrypt B2-side backups so even if a B2 admin or attacker reads the bucket they can't read the data.
-   - **Restic repository password** — `openssl rand -hex 32` — restic uses this to encrypt the archive bucket. **This passphrase is NOT stored on the prod host** — only in your password manager. Without it, archive restore is impossible.
-
-7. **Record the bucket suffix and write down the 5 stored items in your password manager:**
-
-   - `raffle / B2 / pgbackrest` — keyID, applicationKey, bucket name, endpoint (`s3.us-west-002.backblazeb2.com` is the typical default, but B2 console shows the right one), `repo2-cipher-pass`
-   - `raffle / B2 / media` — keyID, applicationKey, bucket name
-   - `raffle / B2 / archive` — keyID, applicationKey, bucket name, **restic passphrase** (separate from B2 keys; pasted into `restic.env` on the host)
-
-These six entries are the **only secrets needed to restore from scratch**. Treat them accordingly.
-
-### Phase C: decide on the merge timing
-
-Two reasonable patterns:
-
-- **Merge PR #1 first** (cleaner deploy story — prod always pulls main). Squash- or merge-commit; then on prod `git checkout main && git pull`. The risk is that if a bug surfaces in Phase D-F, you've already merged.
-- **Keep PR open; pull the branch directly on prod.** On prod: `git fetch && git checkout zero-data-loss-backup`. Merge only after cutover succeeds. Lower risk; messier git story.
-
-Either works. Pick one and stick with it for the cutover. Recommendation: **merge first** if you have a way to roll back (the SQLite db.sqlite3 backup commit `80dd39d` means rolling back the code is one `git revert` away; prod state is more nuanced).
+PR #1 was squash-merged into `main` 2026-05-19 (commit `9755eac`). The prod cutover from here on uses `git checkout main && git pull` on the prod host. No further decision to make in this phase.
 
 ### Phase D: prod host filesystem (Task 11)
 
@@ -192,9 +169,9 @@ repo1-retention-full=4
 repo1-retention-diff=14
 
 repo2-type=s3
-repo2-s3-bucket=raffle-pgbackrest-XXXXXX
-repo2-s3-endpoint=s3.us-west-002.backblazeb2.com
-repo2-s3-region=us-west-002
+repo2-s3-bucket=raffle-pgbackrest-rafi
+repo2-s3-endpoint=s3.us-east-005.backblazeb2.com
+repo2-s3-region=us-east-005
 repo2-s3-key=YOUR_B2_KEY_ID
 repo2-s3-key-secret=YOUR_B2_APPLICATION_KEY
 repo2-path=/raffle
@@ -333,7 +310,7 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml logs --tail=50 me
 
 # Verify B2 has the existing media:
 docker compose --env-file .env.prod -f docker-compose.prod.yml exec media-syncer \
-    rclone size b2:raffle-media-XXXXXX
+    rclone size b2:raffle-media-rafi
 # Compare against:  du -sb /srv/raffle/media
 ```
 
@@ -341,7 +318,7 @@ Submit a real photo entry through the public form, then within seconds:
 
 ```bash
 docker compose --env-file .env.prod -f docker-compose.prod.yml exec media-syncer \
-    rclone lsf b2:raffle-media-XXXXXX/submissions/ | tail
+    rclone lsf b2:raffle-media-rafi/submissions/ | tail
 # Expected: the just-uploaded filename appears.
 ```
 
@@ -365,7 +342,7 @@ sudo sed -i 's|/srv/raffle/repo/docker-compose.prod.yml|'"$(pwd)"'/docker-compos
 # Initialize the restic repo (one-shot)
 source /srv/raffle/config/restic.env
 restic init
-# Expected: "created restic repository <hash> at b2:raffle-archive-XXXXXX:/raffle"
+# Expected: "created restic repository <hash> at b2:raffle-archive-rafi:/raffle"
 
 # Run the first manual snapshot to validate
 sudo /usr/local/bin/raffle-restic-backup
