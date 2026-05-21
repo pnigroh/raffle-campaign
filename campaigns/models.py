@@ -3,10 +3,37 @@ from django.contrib.auth.models import User
 from django.utils.text import slugify
 import uuid
 
+from .managers import CampaignQuerySet, DomainQuerySet
+
+
+class Domain(models.Model):
+    hostname = models.CharField(max_length=253, unique=True)
+    display_name = models.CharField(max_length=200, blank=True)
+    managers = models.ManyToManyField(
+        "auth.User",
+        blank=True,
+        related_name="managed_domains",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = DomainQuerySet.as_manager()
+
+    class Meta:
+        ordering = ["hostname"]
+
+    def __str__(self):
+        return self.hostname
+
 
 class Campaign(models.Model):
     name = models.CharField(max_length=200)
-    slug = models.SlugField(unique=True, blank=True)
+    domain = models.ForeignKey(
+        Domain,
+        on_delete=models.PROTECT,
+        related_name="campaigns",
+    )
+    slug = models.SlugField(blank=True)
     description = models.TextField(blank=True)
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
@@ -79,8 +106,20 @@ class Campaign(models.Model):
         help_text="Users assigned here can view and manage this campaign and its submissions in the dashboard."
     )
 
+    objects = CampaignQuerySet.as_manager()
+
     class Meta:
         ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=["domain", "slug"],
+                name="unique_slug_per_domain",
+            ),
+        ]
+
+    @property
+    def public_url(self):
+        return f"https://{self.domain.hostname}/submit/{self.slug}/"
 
     def __str__(self):
         return self.name

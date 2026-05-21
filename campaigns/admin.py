@@ -1,21 +1,24 @@
 from django import forms
 from django.contrib import admin, messages
+from django.core.exceptions import PermissionDenied
 from django.utils import timezone
 from django.utils.html import format_html
 from django.urls import reverse
 from unfold.admin import ModelAdmin, TabularInline
-from .models import Campaign, Prize, SubmissionCode, Submission, Raffle, RaffleWinner, Store
+from .models import Campaign, Domain, Prize, SubmissionCode, Submission, Raffle, RaffleWinner, Store
 
 
 def _user_managed_campaign_ids(request):
     """Return the IDs of campaigns the current user is allowed to manage.
 
-    Superusers see everything. Otherwise we use the Campaign.managers M2M:
-    a user only sees campaigns where they are listed as a manager.
+    Superusers see everything (returns None sentinel). Otherwise, routes
+    through Campaign.objects.visible_to so domain-only managers (assigned via
+    Domain.managers but not Campaign.managers directly) are also included.
     """
     if request.user.is_superuser:
         return None  # sentinel: no filter
-    return list(request.user.managed_campaigns.values_list('id', flat=True))
+    from .models import Campaign  # avoid potential circular import
+    return set(Campaign.objects.visible_to(request.user).values_list('id', flat=True))
 
 
 class CampaignScopedAdminMixin:
@@ -68,6 +71,31 @@ class SubmissionCodeInline(TabularInline):
     show_change_link = True
 
 
+@admin.register(Domain)
+class DomainAdmin(ModelAdmin):
+    list_display = ("hostname", "display_name", "manager_count", "campaign_count")
+    search_fields = ("hostname", "display_name")
+    filter_horizontal = ("managers",)
+    ordering = ("hostname",)
+
+    def get_queryset(self, request):
+        return Domain.objects.visible_to(request.user)
+
+    @admin.display(description="Managers")
+    def manager_count(self, obj):
+        return obj.managers.count()
+
+    @admin.display(description="Campaigns")
+    def campaign_count(self, obj):
+        return obj.campaigns.count()
+
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+
 @admin.register(Campaign)
 class CampaignAdmin(ModelAdmin):
     list_display = ['name', 'is_active', 'validate_submission_code', 'start_date', 'end_date', 'submission_count', 'logo_thumb', 'dashboard_link']
@@ -78,7 +106,7 @@ class CampaignAdmin(ModelAdmin):
     inlines = [PrizeInline]
     fieldsets = (
         ('Basics', {
-            'fields': ('name', 'slug', 'description', 'is_active'),
+            'fields': ('name', 'domain', 'slug', 'description', 'is_active'),
         }),
         ('Schedule', {
             'fields': ('start_date', 'end_date'),
@@ -97,16 +125,46 @@ class CampaignAdmin(ModelAdmin):
     )
     readonly_fields = ['logo_preview', 'palette_preview']
 
+    view_on_site = True
+
+    def get_view_on_site_url(self, obj=None):
+        if obj is None:
+            return None
+        return obj.public_url
+
     def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        if request.user.is_superuser:
-            return qs
-        return qs.filter(managers=request.user)
+        return Campaign.objects.visible_to(request.user)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "domain":
+            kwargs["queryset"] = Domain.objects.visible_to(request.user)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def save_model(self, request, obj, form, change):
+        # Defense-in-depth: even if the form's queryset filter was bypassed,
+        # reject cross-tenant domain assignments here.
+        if not request.user.is_superuser:
+            if obj.domain_id not in Domain.objects.visible_to(
+                request.user
+            ).values_list("id", flat=True):
+                raise PermissionDenied("You don't manage that domain.")
+
+        if change:
+            old = Campaign.objects.get(pk=obj.pk)
+            if old.slug != obj.slug or old.domain_id != obj.domain_id:
+                messages.warning(
+                    request,
+                    "Public URL changed; previously distributed links no "
+                    "longer work.",
+                )
+        super().save_model(request, obj, form, change)
 
     def has_change_permission(self, request, obj=None):
-        if obj is None or request.user.is_superuser:
+        if request.user.is_superuser:
+            return True
+        if obj is None:
             return super().has_change_permission(request, obj)
-        return super().has_change_permission(request, obj) and obj.managers.filter(id=request.user.id).exists()
+        return Campaign.objects.visible_to(request.user).filter(pk=obj.pk).exists()
 
     def has_delete_permission(self, request, obj=None):
         if request.user.is_superuser:

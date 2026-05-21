@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.db.models import Count, Q, Max
 from django.http import JsonResponse, HttpResponseRedirect
+from django.http.request import split_domain_port
 import json
 
 from .models import Campaign, Prize, Submission, SubmissionCode, Raffle, RaffleWinner
@@ -15,23 +16,41 @@ from .utils import import_codes_from_csv, conduct_raffle, export_winners_csv, ex
 
 
 def _campaigns_for(user):
-    """Queryset of campaigns the user can manage (superusers see all)."""
-    if user.is_superuser:
-        return Campaign.objects.all()
-    return user.managed_campaigns.all()
+    """Queryset of campaigns the user may see in dashboard views."""
+    return Campaign.objects.visible_to(user).select_related("domain")
 
 
 def _get_managed_campaign_or_403(user, campaign_id):
+    """Return campaign if user manages it (directly or via domain), else 404."""
+    return get_object_or_404(_campaigns_for(user), id=campaign_id)
+
+
+def _user_can_access_campaign(user, campaign):
+    """Return True if user is a superuser or the campaign is in their visible set."""
     if user.is_superuser:
-        return get_object_or_404(Campaign, id=campaign_id)
-    try:
-        return user.managed_campaigns.get(id=campaign_id)
-    except Campaign.DoesNotExist:
-        raise PermissionDenied("You don't have access to this campaign.")
+        return True
+    return _campaigns_for(user).filter(pk=campaign.pk).exists()
+
+
+def _get_campaign_for_host(request, slug):
+    """Look up an active campaign bound to the request's host.
+
+    Returns the Campaign or raises Http404. The host portion is parsed
+    via Django's split_domain_port so IPv6 literals (``[::1]:8500``) and
+    IPv4-with-port (``a.test:8500``) both resolve correctly. We never
+    expose port numbers in Domain.hostname.
+    """
+    host, _port = split_domain_port(request.get_host())
+    return get_object_or_404(
+        Campaign,
+        domain__hostname=host,
+        slug=slug,
+        is_active=True,
+    )
 
 
 def submission_form(request, campaign_slug):
-    campaign = get_object_or_404(Campaign, slug=campaign_slug, is_active=True)
+    campaign = _get_campaign_for_host(request, campaign_slug)
     now = timezone.now()
 
     campaign_open = campaign.start_date <= now <= campaign.end_date
@@ -71,7 +90,7 @@ def submission_form(request, campaign_slug):
 
 
 def submission_success(request, campaign_slug):
-    campaign = get_object_or_404(Campaign, slug=campaign_slug)
+    campaign = _get_campaign_for_host(request, campaign_slug)
     return render(request, 'campaigns/submission_success.html', {'campaign': campaign})
 
 
@@ -79,7 +98,7 @@ def submission_form_preview(request, campaign_slug, variant):
     from django.http import Http404
     if variant not in ('a', 'b', 'c'):
         raise Http404("Unknown preview variant")
-    campaign = get_object_or_404(Campaign, slug=campaign_slug)
+    campaign = _get_campaign_for_host(request, campaign_slug)
     form = SubmissionForm(campaign=campaign)
     return render(request, f'campaigns/_proposals/form_{variant}.html', {
         'campaign': campaign,
@@ -302,7 +321,7 @@ def raffle_view(request, campaign_id):
 @login_required
 def raffle_results(request, raffle_id):
     raffle = get_object_or_404(Raffle, id=raffle_id)
-    if not request.user.is_superuser and not raffle.campaign.managers.filter(id=request.user.id).exists():
+    if not _user_can_access_campaign(request.user, raffle.campaign):
         raise PermissionDenied("You don't have access to this raffle.")
     winners = raffle.winners.select_related('submission', 'prize').order_by('prize__order', 'position')
 
@@ -323,7 +342,7 @@ def raffle_results(request, raffle_id):
 @login_required
 def export_raffle_winners(request, raffle_id):
     raffle = get_object_or_404(Raffle, id=raffle_id)
-    if not request.user.is_superuser and not raffle.campaign.managers.filter(id=request.user.id).exists():
+    if not _user_can_access_campaign(request.user, raffle.campaign):
         raise PermissionDenied("You don't have access to this raffle.")
     return export_winners_csv(raffle)
 
@@ -494,9 +513,7 @@ def raffle_audit(request, raffle_id):
         Raffle.objects.select_related('campaign', 'conducted_by'),
         id=raffle_id,
     )
-    if not request.user.is_superuser and not raffle.campaign.managers.filter(
-        id=request.user.id
-    ).exists():
+    if not _user_can_access_campaign(request.user, raffle.campaign):
         raise PermissionDenied("You don't have access to this raffle.")
 
     verify_result = verify_raffle_audit(raffle)
@@ -534,9 +551,7 @@ def raffle_audit_json(request, raffle_id):
         Raffle.objects.select_related('campaign', 'conducted_by'),
         id=raffle_id,
     )
-    if not request.user.is_superuser and not raffle.campaign.managers.filter(
-        id=request.user.id
-    ).exists():
+    if not _user_can_access_campaign(request.user, raffle.campaign):
         raise PermissionDenied("You don't have access to this raffle.")
 
     verify_result = verify_raffle_audit(raffle)

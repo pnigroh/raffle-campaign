@@ -18,6 +18,8 @@ class BrandingTests(TestCase):
 
     @classmethod
     def setUpTestData(cls):
+        from campaigns.models import Domain
+        domain = Domain.objects.get_or_create(hostname="localhost")[0]
         now = timezone.now()
         cls.campaign = Campaign.objects.create(
             name="Test Giveaway",
@@ -28,6 +30,7 @@ class BrandingTests(TestCase):
             is_active=True,
             validate_submission_code=False,
             allow_multiple_submissions=False,
+            domain=domain,
         )
 
     def test_login_page_uses_promo_domo_brand(self):

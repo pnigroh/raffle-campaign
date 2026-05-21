@@ -36,6 +36,10 @@ EXPECTED_PERMS = {
     ("campaigns", "view_submissioncode"),
     ("campaigns", "change_submissioncode"),
     ("campaigns", "delete_submissioncode"),
+    # On Domain: managers can view and change domains they are assigned to, but
+    # not add new domains or delete existing ones (superuser-only operations).
+    ("campaigns", "view_domain"),
+    ("campaigns", "change_domain"),
 }
 
 

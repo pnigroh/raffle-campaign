@@ -27,6 +27,8 @@ from campaigns.models import Campaign
 
 
 def _open_campaign(slug="futboleros"):
+    from campaigns.models import Domain
+    domain = Domain.objects.get_or_create(hostname="localhost")[0]
     now = timezone.now()
     return Campaign.objects.create(
         name="Futboleros Test",
@@ -37,6 +39,7 @@ def _open_campaign(slug="futboleros"):
         is_active=True,
         validate_submission_code=False,
         allow_multiple_submissions=False,
+        domain=domain,
     )
 
 
@@ -47,7 +50,7 @@ class SubmissionFormRedesignWelcomeTests(TestCase):
 
     def test_welcome_uses_new_bg(self):
         url = reverse("submission_form", kwargs={"campaign_slug": self.campaign.slug})
-        resp = self.client.get(url)
+        resp = self.client.get(url, HTTP_HOST="localhost")
         self.assertEqual(resp.status_code, 200)
         body = resp.content.decode()
         # New welcome BG referenced (bike + sky + stadium, no overlays)
@@ -60,7 +63,7 @@ class SubmissionFormRedesignWelcomeTests(TestCase):
         # btn_empezar.png is broken (no text content in the export), so the
         # welcome step uses the legacy .btn.btn-white CSS pill instead.
         url = reverse("submission_form", kwargs={"campaign_slug": self.campaign.slug})
-        body = self.client.get(url).content.decode()
+        body = self.client.get(url, HTTP_HOST="localhost").content.decode()
         self.assertIn(">EMPEZAR<", body)
         self.assertIn('class="btn btn-white btn-wide"', body)
         # The broken btn_empezar.png is NOT wired into the live template.
@@ -76,7 +79,7 @@ class SubmissionFormRedesignTitularsTests(TestCase):
         # titular_anota_datos.png + titular_y_comienza.png are broken (pills
         # without text), so the form step uses the legacy .pill-heading CSS.
         url = reverse("submission_form", kwargs={"campaign_slug": self.campaign.slug})
-        body = self.client.get(url).content.decode()
+        body = self.client.get(url, HTTP_HOST="localhost").content.decode()
         self.assertIn(">ANOTA TUS DATOS<", body)
         self.assertIn(">Y COMIENZA A PARTICIPAR<", body)
         # The broken PNGs are NOT wired into the live template.
@@ -87,14 +90,14 @@ class SubmissionFormRedesignTitularsTests(TestCase):
         # titular_jugando.png is broken (red text on transparent, no pill),
         # so the trivia step uses the legacy .pill-heading CSS.
         url = reverse("submission_form", kwargs={"campaign_slug": self.campaign.slug})
-        body = self.client.get(url).content.decode()
+        body = self.client.get(url, HTTP_HOST="localhost").content.decode()
         self.assertIn(">¡YA ESTÁS JUGANDO!<", body)
         self.assertNotIn("campaigns/landing/titular_jugando.png", body)
         self.assertNotIn("campaigns/img/title_jugando.png", body)
 
     def test_success_and_fail_use_new_titulars(self):
         url = reverse("submission_form", kwargs={"campaign_slug": self.campaign.slug})
-        body = self.client.get(url).content.decode()
+        body = self.client.get(url, HTTP_HOST="localhost").content.decode()
         self.assertIn("campaigns/landing/titular_crack.png", body)
         self.assertIn("campaigns/landing/titular_fallaste.png", body)
         self.assertNotIn("campaigns/img/title_crack.png", body)
@@ -102,7 +105,7 @@ class SubmissionFormRedesignTitularsTests(TestCase):
 
     def test_steps_use_new_blurred_stadium_bg(self):
         url = reverse("submission_form", kwargs={"campaign_slug": self.campaign.slug})
-        body = self.client.get(url).content.decode()
+        body = self.client.get(url, HTTP_HOST="localhost").content.decode()
         self.assertIn("campaigns/landing/bg_mobile_steps.png", body)
         self.assertNotIn("campaigns/img/bg_2.webp", body)
 
@@ -116,7 +119,7 @@ class SubmissionFormRedesignDesktopTests(TestCase):
         # The inline <style> block contains the desktop media query that
         # references bg_desktop.png as the body background.
         url = reverse("submission_form", kwargs={"campaign_slug": self.campaign.slug})
-        body = self.client.get(url).content.decode()
+        body = self.client.get(url, HTTP_HOST="localhost").content.decode()
         self.assertIn("campaigns/landing/bg_desktop.png", body)
         # And the desktop breakpoint is at 768px
         self.assertIn("min-width: 768px", body)

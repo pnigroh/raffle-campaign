@@ -49,3 +49,23 @@ procedures, see `restore-playbook.md`. For design rationale, see
 - Force a manual backup: `docker compose -f docker-compose.prod.yml exec -u postgres postgres pgbackrest --stanza=raffle --type=incr backup`
 - Status of all backups: `docker compose -f docker-compose.prod.yml exec -u postgres postgres pgbackrest --stanza=raffle info`
 - Manually run freshness check: `sudo /usr/local/bin/raffle-backup-freshness`
+
+## Adding a new tenant domain
+
+When onboarding a new client with their own branded domain:
+
+1. **DNS** — point the hostname at the prod VPS.
+2. **Reverse proxy** (Plesk) — add the new hostname to the existing app's vhost (or create a new vhost forwarding to the app container).
+3. **ALLOWED_HOSTS** — add the new hostname to `ALLOWED_HOSTS` in `.env.prod`. Restart the web container.
+4. **Domain row** — in Django admin → Domains → Add. Set hostname, display_name, and add the client user(s) to managers.
+5. **Existing campaigns** — move any relevant campaigns to the new Domain via admin (Campaign change page → Domain dropdown).
+
+After step 3 you can verify the configuration with:
+
+```bash
+docker exec raffle-prod python manage.py check
+```
+
+Any `campaigns.W001` warning means a Domain row references a hostname not in ALLOWED_HOSTS. Fix and restart.
+
+**Note on visibility:** the W001 warning surfaces via `manage.py check` only — it is NOT printed at container startup. Operators must run `manage.py check` explicitly after editing Domain rows or `ALLOWED_HOSTS`.

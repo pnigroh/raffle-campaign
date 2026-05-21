@@ -13,6 +13,8 @@ User = get_user_model()
 
 
 def _campaign(name, slug, manager=None, *, validate_codes=False):
+    from campaigns.models import Domain
+    domain = Domain.objects.get_or_create(hostname="localhost")[0]
     now = timezone.now()
     c = Campaign.objects.create(
         name=name,
@@ -23,6 +25,7 @@ def _campaign(name, slug, manager=None, *, validate_codes=False):
         is_active=True,
         validate_submission_code=validate_codes,
         allow_multiple_submissions=False,
+        domain=domain,
     )
     if manager:
         c.managers.add(manager)
