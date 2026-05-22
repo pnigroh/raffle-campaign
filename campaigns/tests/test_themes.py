@@ -6,6 +6,11 @@ from django.test import TestCase, override_settings
 from campaigns.models import Theme
 
 
+def _localhost_domain():
+    from campaigns.models import Domain
+    return Domain.objects.get_or_create(hostname="localhost")[0]
+
+
 class ThemeModelTests(TestCase):
     def test_str_is_name(self):
         # Use a slug that doesn't conflict with the seeded "futboleros" row.
@@ -44,6 +49,7 @@ class CampaignThemeFKTests(TestCase):
         c = Campaign.objects.create(
             name="C", slug="c-nullable",
             start_date="2026-06-01", end_date="2026-06-30",
+            domain=_localhost_domain(),
         )
         self.assertIsNone(c.theme_id)
 
@@ -53,7 +59,7 @@ class CampaignThemeFKTests(TestCase):
         c = Campaign.objects.create(
             name="C", slug="c-ref",
             start_date="2026-06-01", end_date="2026-06-30",
-            theme=t,
+            theme=t, domain=_localhost_domain(),
         )
         self.assertEqual(c.theme, t)
 
@@ -133,7 +139,7 @@ class ThemeDeleteSignalTests(TestCase):
         Campaign.objects.create(
             name="C", slug="c-protected",
             start_date="2026-06-01", end_date="2026-06-30",
-            theme=t,
+            theme=t, domain=_localhost_domain(),
         )
         with self.assertRaises(ProtectedError):
             t.delete()
@@ -309,31 +315,32 @@ class ThemeRenderTests(TestCase):
         )
 
         from campaigns.models import Campaign
+        domain = _localhost_domain()
         self.c_themed = Campaign.objects.create(
             name="Themed", slug="themed-render-test",
             start_date="2026-06-01", end_date="2026-06-30",
-            is_active=True, theme=self.t,
+            is_active=True, theme=self.t, domain=domain,
         )
         self.c_default = Campaign.objects.create(
             name="Plain", slug="plain-render-test",
             start_date="2026-06-01", end_date="2026-06-30",
-            is_active=True,
+            is_active=True, domain=domain,
         )
 
     def test_themed_campaign_renders_its_theme(self):
-        r = self.client.get(f"/submit/{self.c_themed.slug}/")
+        r = self.client.get(f"/submit/{self.c_themed.slug}/", HTTP_HOST="localhost")
         self.assertEqual(r.status_code, 200)
         self.assertIn(b"FORM:Themed", r.content)
 
     def test_unset_theme_falls_back_to_default(self):
-        r = self.client.get(f"/submit/{self.c_default.slug}/")
+        r = self.client.get(f"/submit/{self.c_default.slug}/", HTTP_HOST="localhost")
         self.assertEqual(r.status_code, 200)
         self.assertIn(b"DEFAULT FORM:Plain", r.content)
 
     def test_broken_theme_directory_404s(self):
         # Wipe the themed theme's submission_form.html
         (self.t.directory / "submission_form.html").unlink()
-        r = self.client.get(f"/submit/{self.c_themed.slug}/")
+        r = self.client.get(f"/submit/{self.c_themed.slug}/", HTTP_HOST="localhost")
         self.assertEqual(r.status_code, 404)
 
 
@@ -344,6 +351,7 @@ class CampaignAdminThemeDropdownTests(TestCase):
         c = Campaign.objects.create(
             name="C", slug="c-theme-dropdown",
             start_date="2026-06-01", end_date="2026-06-30",
+            domain=_localhost_domain(),
         )
         self.client.force_login(su)
         r = self.client.get(
