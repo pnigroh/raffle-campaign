@@ -38,6 +38,7 @@ services:
     volumes:
       - /srv/raffle/media:/app/media
       - /srv/raffle/staticfiles:/app/staticfiles
+      - /srv/raffle/themes:/app/themes
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/dashboard/login/')"]
       interval: 30s

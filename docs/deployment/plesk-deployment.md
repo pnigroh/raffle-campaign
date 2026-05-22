@@ -1,5 +1,9 @@
 # Plesk Deployment Runbook — Raffle Campaign (Promo-Domo)
 
+> ⚠️ **Superseded by `docs/deployment/cutover-state.md` (2026-05-19).**
+> This runbook describes the legacy SQLite single-service stack. The production stack moved to Postgres + pgBackRest + media-syncer + restic when PR #1 merged. PRs #2 (multi-domain) and #3 (themes) layered on top of that. **For new deploys, follow `cutover-state.md` instead** — it covers Postgres bring-up, Domain bootstrap, and the `/theme-assets/` nginx block.
+> Kept here as a reference for the pre-cutover topology. Some Phase 1 task descriptions (Dockerfile.prod, settings.py proxy-aware block) remain accurate background reading.
+
 **Target stack:** Plesk server (any OS where the Docker extension is available — Ubuntu 22.04, Debian 12, AlmaLinux 8/9, CentOS 7, RHEL — Plesk Obsidian 18.x).
 **Application:** Django 4.2 + SQLite, served by gunicorn inside Docker, fronted by Plesk Nginx.
 **Initial data:** the current dev SQLite (Futboleros campaign, 8 submissions, 2 raffles + audit logs, prize, manager test user, Campaign Managers group) + ~1.5 MB of media uploads + ~10 MB of static assets.

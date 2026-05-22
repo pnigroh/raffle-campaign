@@ -2,8 +2,8 @@
 
 > **What this is:** a single-page operator log that tracks the in-flight cutover from SQLite to the new Postgres + B2 backup stack. Updated as we go. Will be deleted (or archived under `docs/deployment/history/`) once the cutover is fully complete and the first restore rehearsal is logged.
 
-**Status:** Code merged + B2 provisioned. Awaiting operator SSH for Phases D–J.
-**Last updated:** 2026-05-20
+**Status:** Code merged + B2 provisioned. PR #2 (multi-domain) + PR #3 (themes) also merged 2026-05-21. Awaiting operator SSH for Phases D–J.
+**Last updated:** 2026-05-21
 **Branch:** merged to `main` 2026-05-19 via PR #1 (squash `9755eac`). Local branch `zero-data-loss-backup` deleted; the original 19-commit branch is still at `origin/zero-data-loss-backup` for archaeology.
 **Authoritative plan:** [`docs/superpowers/plans/2026-05-13-zero-data-loss-backup.md`](../superpowers/plans/2026-05-13-zero-data-loss-backup.md)
 **Authoritative spec:** [`docs/superpowers/specs/2026-05-13-zero-data-loss-backup-design.md`](../superpowers/specs/2026-05-13-zero-data-loss-backup-design.md)
@@ -15,8 +15,9 @@
 If you only have 60 seconds, read these three things:
 
 1. **Next concrete step:** Phase D — provision `/srv/raffle/...` on the prod host. B2 buckets are already created (suffix `rafi`, region `us-east-005`); the six secrets are in the password manager. Phase A is a 30-second sanity check; Phase B+C are already done.
-2. **Nothing on prod has been touched yet.** PR #1 is merged into `main`. Prod is still running the legacy SQLite single-service compose. The next SSH window is the cutover.
+2. **Virgin-server path (2026-05-21):** the operator confirmed prod is a fresh Plesk subscription with no app deployed yet. **Skip Phase G** (SQLite→Postgres migration); go straight from Phase F → G1 (`up -d web`) → G2 (Domain rename + setup_default_theme) → G3 (Plesk Nginx). All 14 migrations apply on first boot.
 3. **The architecture changed during dev** — the original 4-service design had a `pgbackrest` sidecar, but smoke testing proved it can't reach Postgres-in-another-container. The merged code uses 3 services: `postgres` (with cron + pgBackRest inside), `web`, `media-syncer`. The spec, plan, and playbook were all updated to match.
+4. **Multi-domain + themes layered on top (2026-05-21):** PR #2 added the `Domain` model + host-based tenant isolation (every Campaign now belongs to a Domain; the public form 404s if Host doesn't match). PR #3 added per-campaign Theme bundles served from `/srv/raffle/themes/<slug>/`. Both are migrated automatically; Phase G2 handles the post-migrate Domain rename + (optional) `setup_default_theme` recovery; Phase G3 includes the `/theme-assets/` nginx alias.
 
 ---
 
@@ -149,11 +150,13 @@ sudo install -d -o 999   -g 999   -m 700 /srv/raffle/pg            # postgres ui
 sudo install -d -o 999   -g 999   -m 700 /srv/raffle/pgbackrest    # same uid; pgbackrest writes here
 sudo install -d -o root  -g root  -m 755 /srv/raffle/media
 sudo install -d -o root  -g root  -m 755 /srv/raffle/staticfiles
+sudo install -d -o root  -g root  -m 755 /srv/raffle/themes        # per-campaign theme bundles (PR #3)
 sudo install -d -o root  -g root  -m 700 /srv/raffle/config
 sudo install -d -o root  -g root  -m 700 /srv/raffle/migration
 
 ls -la /srv/raffle/
-# Expected: pg and pgbackrest show owner 999:999; config and migration are root:root mode 700.
+# Expected: pg and pgbackrest show owner 999:999; config and migration are root:root mode 700;
+# themes is root:root mode 755 (collectstatic-like content, served by Plesk nginx directly).
 ```
 
 ### Phase E: prod credentials (Task 12)
@@ -274,7 +277,9 @@ If `check` fails for repo2, the most likely cause is B2 credentials. Re-verify `
 
 ### Phase G: SQLite → Postgres migration (Task 14)
 
-**Maintenance window** — Django will be down for 5-10 minutes. Announce it before starting.
+**Virgin-server shortcut (2026-05-21):** if the prod host has *no* existing SQLite data to preserve (fresh Plesk subscription, app never deployed), **skip this phase entirely**. Bring `web` up directly against the empty Postgres in Phase G1; Django's `migrate` on first boot will apply all 14 migrations and seed the fallback `Domain(hostname='promo-domo.example')` + default `Theme(slug='futboleros')`. Then proceed straight to Phase G2 to rename the fallback Domain to the real hostname.
+
+**Only run this phase if the legacy SQLite stack is live with real data.** Then it's a maintenance window — Django will be down for 5-10 minutes. Announce it before starting.
 
 ```bash
 # Sanity-check legacy DB still works (briefly):
@@ -285,6 +290,8 @@ docker compose -f docker-compose.prod.yml exec web python manage.py check
 ```
 
 The script does 7 phases (capture row counts → dumpdata → stop web → bring up postgres → migrate → loaddata + sequence reset → start web). At the end it prints fresh row counts; compare against `/srv/raffle/migration/precount.txt`. Any diff → DO NOT archive `db.sqlite3` yet — investigate first.
+
+**Note (2026-05-21):** the SQLite source DB now also has the multi-domain (PR #2) and themes (PR #3) migrations applied. After migration the new Postgres DB will contain at least one `Domain` row and the default `Theme` row in addition to your existing campaigns. The migration script doesn't need to know about either — `dumpdata` + `loaddata` handle the new tables transparently.
 
 If row counts match, smoke test the site:
 - Log into `/dashboard/login/` with an existing user
@@ -299,6 +306,107 @@ When you're satisfied, take a fresh full pgbackrest backup so the rest of the cu
 ```bash
 docker compose --env-file .env.prod -f docker-compose.prod.yml exec -u postgres postgres \
     pgbackrest --stanza=raffle --type=full backup
+```
+
+### Phase G1: bring up web on Postgres (virgin-server path)
+
+Only on the virgin-server path (no legacy SQLite). After Phase F finished with Postgres alive + healthy, bring up web:
+
+```bash
+cd /path/to/raffle-campaign-checkout
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d web
+docker compose --env-file .env.prod -f docker-compose.prod.yml logs --tail=40 web
+# Expected:
+#   - "Waiting for Postgres..." then "Postgres ready"
+#   - "Applying campaigns.0001_initial... OK" through "0014_populate_default_theme_directory... OK"
+#     (14 campaigns migrations total: 8 legacy + 3 domain + 3 theme)
+#   - "Default theme at /app/themes/futboleros" from the 0014 RunPython
+#   - "XX static files copied to '/app/staticfiles'"
+#   - "Listening at: http://0.0.0.0:8000"
+```
+
+If the 0014 RunPython logs `RuntimeError: Source theme directory not found at /app/campaigns/themes/futboleros`, the image was built without the bundled theme assets. Re-run `docker compose -f docker-compose.prod.yml build` and recreate the container.
+
+### Phase G2: Domain + theme bootstrap (post-migrate)
+
+After Phase G or G1, Postgres has one `Domain(hostname='promo-domo.example')` row (the seeded fallback) and one `Theme(slug='futboleros', is_default=True)` row. Rename the Domain to the real production hostname, and verify ALLOWED_HOSTS matches.
+
+```bash
+# 1. Rename the fallback Domain to the real production hostname.
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec web \
+    python manage.py shell -c "
+from campaigns.models import Domain
+d = Domain.objects.get(hostname='promo-domo.example')
+d.hostname = 'DOMAIN.example.com'  # ← edit me to the real hostname
+d.display_name = 'DOMAIN.example.com'
+d.save()
+print(f'Renamed Domain {d.id} → {d.hostname}')
+"
+
+# 2. Verify ALLOWED_HOSTS in .env.prod includes DOMAIN.example.com. If you change it, restart web:
+docker compose --env-file .env.prod -f docker-compose.prod.yml restart web
+
+# 3. Run manage.py check — must NOT print campaigns.W001.
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec web python manage.py check
+# Expected: "System check identified no issues."
+# If you see "Domain hostname(s) not in ALLOWED_HOSTS: ..." — fix .env.prod and restart.
+
+# 4. (Operator recovery only) If /srv/raffle/themes/futboleros/ is missing or partial, restore it:
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec web \
+    python manage.py setup_default_theme
+```
+
+To add more tenant domains later, see `docs/deployment/host-setup.md` → "Adding a new tenant domain".
+
+### Phase G3: Plesk Nginx — proxy + static + theme assets
+
+In Plesk → Domains → DOMAIN.example.com → Apache & nginx Settings → **Additional nginx directives**, paste:
+
+```nginx
+# Forward dynamic Django traffic to gunicorn on localhost:8500
+location / {
+    proxy_pass http://127.0.0.1:8500;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_redirect off;
+    proxy_buffering on;
+    proxy_read_timeout 30s;
+}
+
+# Static files (Django collectstatic output)
+location /static/ {
+    alias /srv/raffle/staticfiles/;
+    expires 7d;
+    add_header Cache-Control "public, immutable";
+}
+
+# Media uploads (user-submitted images)
+location /media/ {
+    alias /srv/raffle/media/;
+    expires 1d;
+    add_header Cache-Control "public";
+}
+
+# Per-campaign theme assets (PR #3) — bypasses Django for image/font/CSS requests
+location ~ ^/theme-assets/([^/]+)/(.+)$ {
+    alias /srv/raffle/themes/$1/assets/$2;
+    expires 7d;
+    add_header Cache-Control "public, immutable";
+}
+
+# 10 MB ceiling for submission image uploads
+client_max_body_size 10m;
+```
+
+Click OK; Plesk reloads nginx. Issue a Let's Encrypt cert (Plesk → SSL/TLS Certificates → Install a free basic certificate provided by Let's Encrypt), then toggle the HTTPS redirect on.
+
+Verify:
+```bash
+curl -I https://DOMAIN.example.com/dashboard/login/
+curl -I https://DOMAIN.example.com/theme-assets/futboleros/fonts/Andreas.ttf
+# Both expected: HTTP/2 200
 ```
 
 ### Phase H: media-syncer on prod (Task 15)
@@ -416,6 +524,7 @@ If the rehearsal succeeds, the cutover is **done**. Update memory + delete this 
 | `/srv/raffle/pgbackrest/` | pgBackRest local repo (repo1) | 700, owner 999:999 |
 | `/srv/raffle/media/` | User uploads | 755, owner root |
 | `/srv/raffle/staticfiles/` | Collected statics | 755, owner root |
+| `/srv/raffle/themes/` | Per-campaign theme bundles (PR #3) | 755, owner root |
 | `/srv/raffle/migration/` | One-shot migration artifacts | 700, owner root |
 | `/srv/raffle/config/pgbackrest.conf` | B2 repo2 credentials + cipher pass | 600, owner 999:999 |
 | `/srv/raffle/config/rclone.conf` | B2 media-bucket credentials | 600 |
