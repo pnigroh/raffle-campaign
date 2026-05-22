@@ -800,6 +800,14 @@
 
         try {
           const fd = new FormData(form);
+          // Always submit the CURRENT csrftoken cookie, not whatever was
+          // baked into the page at render time. The cookie can rotate while
+          // the form is open (e.g. operator logged into /admin/ in another
+          // tab); without this, the form's hidden token becomes stale and
+          // Django returns 403 "CSRF token from POST incorrect".
+          const csrfCookie = (document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/) || [])[1];
+          if (csrfCookie) fd.set('csrfmiddlewaretoken', decodeURIComponent(csrfCookie));
+
           const res = await fetch(window.location.pathname, {
             method: 'POST',
             body: fd,
