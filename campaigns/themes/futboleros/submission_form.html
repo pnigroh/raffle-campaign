@@ -584,63 +584,22 @@
 
       <form id="entryForm" method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
+        {% load dynamic_form_tags %}
 
-        <div class="field">
-          <label for="id_first_name">Nombre</label>
-          <input type="text" id="id_first_name" name="first_name" autocomplete="given-name" required>
-          <div class="err" data-err-for="first_name">Ingresa tu nombre.</div>
-        </div>
+        {% if form.non_field_errors %}
+          <div class="form-errors alert">{{ form.non_field_errors }}</div>
+        {% endif %}
 
-        <div class="field">
-          <label for="id_last_name">Apellidos</label>
-          <input type="text" id="id_last_name" name="last_name" autocomplete="family-name" required>
-          <div class="err" data-err-for="last_name">Ingresa tus apellidos.</div>
-        </div>
+        {% for spec in form_fields %}
+          {% theme_partial spec=spec %}
+        {% endfor %}
 
-        <div class="field">
-          <label for="id_phone">Teléfono</label>
-          <input type="tel" id="id_phone" name="phone" autocomplete="tel" inputmode="tel" required>
-          <div class="err" data-err-for="phone">Ingresa un teléfono válido.</div>
-        </div>
-
-        <div class="field">
-          <label for="id_email">Correo electrónico</label>
-          <input type="email" id="id_email" name="email" autocomplete="email" required>
-          <div class="err" data-err-for="email">Ingresa un correo válido.</div>
-        </div>
-
-        <div class="field">
-          <label for="id_store">Lugar donde compraste el producto.</label>
-          <select id="id_store" name="store" required>
-            <option value="">Selecciona un lugar</option>
-            {% for choice in form.fields.store.queryset %}
-              <option value="{{ choice.id }}">{{ choice.name }}</option>
-            {% endfor %}
-          </select>
-          <div class="err" data-err-for="store">Selecciona un lugar.</div>
-        </div>
-
-        <!-- Hidden fields the backend still expects -->
-        <input type="hidden" name="state" value="">
-        <input type="hidden" name="county" value="">
-        <input type="hidden" name="submission_code_input" value="">
-
-        <div class="upload">
-          <label class="upload-label" for="id_image_1">Suba aquí una foto de tu factura de compra</label>
-          <div class="upload-drop" id="uploadDrop">
-            <input type="file" id="id_image_1" name="image_1" accept="image/*" required>
-            <div class="upload-icon" id="uploadIcon" aria-hidden="true">
-              <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M10 44v8a4 4 0 0 0 4 4h36a4 4 0 0 0 4-4v-8"/>
-                <path d="M32 12v28"/>
-                <path d="M20 24l12-12 12 12"/>
-              </svg>
-            </div>
-            <img class="upload-thumb" id="uploadThumb" alt="" hidden>
-            <div class="upload-filename" id="uploadFilename" hidden></div>
+        {% if form.submission_code_input %}
+          <div class="ff-field ff-field--code">
+            {{ form.submission_code_input.label_tag }}
+            {{ form.submission_code_input }}
           </div>
-          <div class="err" data-err-for="image_1" style="margin-top:6px;">Adjunta una foto de tu factura.</div>
-        </div>
+        {% endif %}
 
         <div class="center-actions" style="margin-top: 22px;">
           <button type="submit" class="btn btn-wide" id="submitBtn">ENVIAR</button>
@@ -743,24 +702,28 @@
       const submitBtn = document.getElementById('submitBtn');
       const errorBox = document.getElementById('formErrors');
 
-      // File preview
+      // File preview (only active when the bespoke upload widget is present;
+      // the dynamic loop's fallback _file.html partial omits those IDs, so
+      // these elements will be null and the block is safely skipped).
       const fileInput = document.getElementById('id_image_1');
       const drop = document.getElementById('uploadDrop');
       const icon = document.getElementById('uploadIcon');
       const thumb = document.getElementById('uploadThumb');
       const fname = document.getElementById('uploadFilename');
 
-      fileInput.addEventListener('change', () => {
-        const file = fileInput.files && fileInput.files[0];
-        if (!file) return;
-        drop.classList.add('has-file');
-        icon.hidden = true;
-        thumb.hidden = false;
-        thumb.src = URL.createObjectURL(file);
-        fname.hidden = false;
-        fname.textContent = file.name;
-        clearFieldError('image_1');
-      });
+      if (fileInput && drop && icon && thumb && fname) {
+        fileInput.addEventListener('change', () => {
+          const file = fileInput.files && fileInput.files[0];
+          if (!file) return;
+          drop.classList.add('has-file');
+          icon.hidden = true;
+          thumb.hidden = false;
+          thumb.src = URL.createObjectURL(file);
+          fname.hidden = false;
+          fname.textContent = file.name;
+          clearFieldError('image_1');
+        });
+      }
 
       function clearFieldError(name) {
         const f = form.querySelector(`[data-err-for="${name}"]`);
