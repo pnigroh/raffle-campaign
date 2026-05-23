@@ -1,5 +1,6 @@
 import csv
 import io
+import json
 import random
 import secrets
 from django.http import HttpResponse
@@ -172,7 +173,8 @@ def export_submissions_csv(campaign, submission_qs=None):
     writer = csv.writer(response)
     writer.writerow([
         'First Name', 'Last Name', 'Email', 'Phone',
-        'State', 'County', 'Submission Code', 'Submitted At'
+        'State', 'County', 'Submission Code', 'Submitted At',
+        'Extra Data'
     ])
 
     for sub in submission_qs.select_related('submission_code'):
@@ -181,6 +183,7 @@ def export_submissions_csv(campaign, submission_qs=None):
             sub.first_name, sub.last_name, sub.email, sub.phone,
             sub.state, sub.county, code,
             sub.submitted_at.strftime('%Y-%m-%d %H:%M:%S'),
+            json.dumps(sub.extra_data or {}, ensure_ascii=False),
         ])
 
     return response

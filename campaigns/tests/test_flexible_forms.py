@@ -669,3 +669,30 @@ class DashboardDetailTests(TestCase):
         resp = client.get(f"/dashboard/campaign/{self.camp.pk}/")
         self.assertContains(resp, "I love it")
         self.assertContains(resp, "size")
+
+
+class CsvExportTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+        self.user = User.objects.create_superuser("e", "e@x.com", "pw")
+        self.domain = Domain.objects.create(hostname="csv.test")
+        self.camp = Campaign.objects.create(
+            name="C", slug="c", domain=self.domain,
+            start_date=timezone.now(), end_date=timezone.now() + timedelta(days=1),
+        )
+        Submission.objects.create(
+            campaign=self.camp,
+            first_name="A", last_name="B", email="a@b.com",
+            extra_data={"size": "m", "why": "love it"},
+        )
+
+    def test_csv_includes_extra_data_column(self):
+        from django.test import Client
+        client = Client(HTTP_HOST="csv.test")
+        client.force_login(self.user)
+        resp = client.get(f"/dashboard/campaign/{self.camp.pk}/export/")
+        body = resp.content.decode("utf-8")
+        header_row = body.splitlines()[0]
+        self.assertIn("Extra Data", header_row)
+        # The JSON blob is in the row body; check that 'size' appears
+        self.assertIn("size", body)
