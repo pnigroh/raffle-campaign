@@ -9,8 +9,8 @@ ALLOWED_BUILTIN_KEYS = {
     "state", "county", "store", "image_1", "image_2",
 }
 IRREDUCIBLE_REQUIRED = ("first_name", "last_name", "email")
-ALLOWED_CUSTOM_TYPES = {"text", "textarea", "select", "checkbox", "file"}  # consumed by Task 3
-RESERVED_KEYS = {"csrfmiddlewaretoken", "submission_code_input", "submission_code_obj"}  # consumed by Task 3
+ALLOWED_CUSTOM_TYPES = {"text", "textarea", "select", "checkbox", "file"}
+RESERVED_KEYS = {"csrfmiddlewaretoken", "submission_code_input", "submission_code_obj"}
 
 
 def validate_form_schema(schema):
@@ -147,7 +147,7 @@ def _validate_custom_type(entry, path):
 
     if ftype == "file":
         mb = entry.get("max_size_mb", 10)
-        if not isinstance(mb, int) or mb < 1 or mb > 50:
+        if isinstance(mb, bool) or not isinstance(mb, int) or mb < 1 or mb > 50:
             errs.append({"path": f"{path}.max_size_mb",
                          "message": "max_size_mb must be an int 1..50"})
 

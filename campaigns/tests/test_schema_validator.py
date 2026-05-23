@@ -2,6 +2,12 @@ from django.test import SimpleTestCase
 
 from campaigns.schema_validator import validate_form_schema
 
+_BASE_FIELDS = [
+    {"kind": "builtin", "key": "first_name", "required": True, "label": "F"},
+    {"kind": "builtin", "key": "last_name", "required": True, "label": "L"},
+    {"kind": "builtin", "key": "email", "required": True, "label": "E"},
+]
+
 
 class SchemaValidatorTopLevelTests(SimpleTestCase):
 
@@ -68,12 +74,6 @@ class SchemaValidatorTopLevelTests(SimpleTestCase):
 
 class BuiltinShapeTests(SimpleTestCase):
 
-    BASE_FIELDS = [
-        {"kind": "builtin", "key": "first_name", "required": True, "label": "F"},
-        {"kind": "builtin", "key": "last_name", "required": True, "label": "L"},
-        {"kind": "builtin", "key": "email", "required": True, "label": "E"},
-    ]
-
     def test_unknown_builtin_key_rejected(self):
         errs = validate_form_schema({
             "version": 1,
@@ -89,7 +89,7 @@ class BuiltinShapeTests(SimpleTestCase):
     def test_state_allowed_states_not_a_list_rejected(self):
         errs = validate_form_schema({
             "version": 1,
-            "fields": self.BASE_FIELDS + [{"kind": "builtin", "key": "state", "required": True,
+            "fields": _BASE_FIELDS + [{"kind": "builtin", "key": "state", "required": True,
                                "label": "S", "allowed_states": "CA"}],
         })
         self.assertTrue(any("allowed_states" in e["path"] for e in errs))
@@ -97,7 +97,7 @@ class BuiltinShapeTests(SimpleTestCase):
     def test_state_allowed_states_entry_missing_code_rejected(self):
         errs = validate_form_schema({
             "version": 1,
-            "fields": self.BASE_FIELDS + [{"kind": "builtin", "key": "state", "required": True,
+            "fields": _BASE_FIELDS + [{"kind": "builtin", "key": "state", "required": True,
                                "label": "S", "allowed_states": [{"label": "California"}]}],
         })
         self.assertTrue(any("allowed_states" in e["path"] for e in errs))
@@ -105,7 +105,7 @@ class BuiltinShapeTests(SimpleTestCase):
     def test_state_allowed_states_duplicate_codes_rejected(self):
         errs = validate_form_schema({
             "version": 1,
-            "fields": self.BASE_FIELDS + [{"kind": "builtin", "key": "state", "required": True,
+            "fields": _BASE_FIELDS + [{"kind": "builtin", "key": "state", "required": True,
                                "label": "S", "allowed_states": [
                                    {"code": "CA", "label": "California"},
                                    {"code": "CA", "label": "Cali"},
@@ -120,23 +120,18 @@ class BuiltinShapeTests(SimpleTestCase):
         """Empty list → consumer falls back to default 51."""
         errs = validate_form_schema({
             "version": 1,
-            "fields": self.BASE_FIELDS + [{"kind": "builtin", "key": "state", "required": True,
+            "fields": _BASE_FIELDS + [{"kind": "builtin", "key": "state", "required": True,
                                "label": "S", "allowed_states": []}],
         })
         self.assertEqual(errs, [])
 
 
 class CustomShapeTests(SimpleTestCase):
-    BASE_FIELDS = [
-        {"kind": "builtin", "key": "first_name", "required": True, "label": "F"},
-        {"kind": "builtin", "key": "last_name", "required": True, "label": "L"},
-        {"kind": "builtin", "key": "email", "required": True, "label": "E"},
-    ]
 
     def test_custom_key_must_match_regex(self):
         errs = validate_form_schema({
             "version": 1,
-            "fields": self.BASE_FIELDS + [{
+            "fields": _BASE_FIELDS + [{
                 "kind": "custom", "key": "Bad-Key!", "type": "text",
                 "required": False, "label": "x",
             }],
@@ -146,7 +141,7 @@ class CustomShapeTests(SimpleTestCase):
     def test_custom_key_must_be_unique(self):
         errs = validate_form_schema({
             "version": 1,
-            "fields": self.BASE_FIELDS + [
+            "fields": _BASE_FIELDS + [
                 {"kind": "custom", "key": "why", "type": "text", "required": False, "label": "x"},
                 {"kind": "custom", "key": "why", "type": "text", "required": False, "label": "y"},
             ],
@@ -156,7 +151,7 @@ class CustomShapeTests(SimpleTestCase):
     def test_custom_key_cannot_collide_with_builtin(self):
         errs = validate_form_schema({
             "version": 1,
-            "fields": self.BASE_FIELDS + [{
+            "fields": _BASE_FIELDS + [{
                 "kind": "custom", "key": "phone", "type": "text",
                 "required": False, "label": "x",
             }],
@@ -169,7 +164,7 @@ class CustomShapeTests(SimpleTestCase):
     def test_custom_key_cannot_collide_with_reserved_name(self):
         errs = validate_form_schema({
             "version": 1,
-            "fields": self.BASE_FIELDS + [{
+            "fields": _BASE_FIELDS + [{
                 "kind": "custom", "key": "submission_code_input", "type": "text",
                 "required": False, "label": "x",
             }],
@@ -179,7 +174,7 @@ class CustomShapeTests(SimpleTestCase):
     def test_custom_type_must_be_known(self):
         errs = validate_form_schema({
             "version": 1,
-            "fields": self.BASE_FIELDS + [{
+            "fields": _BASE_FIELDS + [{
                 "kind": "custom", "key": "x", "type": "money",
                 "required": False, "label": "x",
             }],
@@ -189,7 +184,7 @@ class CustomShapeTests(SimpleTestCase):
     def test_select_requires_at_least_two_options(self):
         errs = validate_form_schema({
             "version": 1,
-            "fields": self.BASE_FIELDS + [{
+            "fields": _BASE_FIELDS + [{
                 "kind": "custom", "key": "size", "type": "select",
                 "required": True, "label": "x",
                 "options": [{"value": "s", "label": "S"}],
@@ -200,7 +195,7 @@ class CustomShapeTests(SimpleTestCase):
     def test_select_options_must_have_unique_values(self):
         errs = validate_form_schema({
             "version": 1,
-            "fields": self.BASE_FIELDS + [{
+            "fields": _BASE_FIELDS + [{
                 "kind": "custom", "key": "size", "type": "select",
                 "required": True, "label": "x",
                 "options": [{"value": "s", "label": "S"}, {"value": "s", "label": "Same"}],
@@ -214,7 +209,7 @@ class CustomShapeTests(SimpleTestCase):
     def test_file_max_size_mb_too_high_rejected(self):
         errs = validate_form_schema({
             "version": 1,
-            "fields": self.BASE_FIELDS + [{
+            "fields": _BASE_FIELDS + [{
                 "kind": "custom", "key": "f", "type": "file",
                 "required": False, "label": "x", "max_size_mb": 51,
             }],
@@ -224,7 +219,7 @@ class CustomShapeTests(SimpleTestCase):
     def test_file_max_size_mb_zero_rejected(self):
         errs = validate_form_schema({
             "version": 1,
-            "fields": self.BASE_FIELDS + [{
+            "fields": _BASE_FIELDS + [{
                 "kind": "custom", "key": "f", "type": "file",
                 "required": False, "label": "x", "max_size_mb": 0,
             }],
@@ -234,7 +229,7 @@ class CustomShapeTests(SimpleTestCase):
     def test_full_example_from_spec_is_valid(self):
         errs = validate_form_schema({
             "version": 1,
-            "fields": self.BASE_FIELDS + [
+            "fields": _BASE_FIELDS + [
                 {"kind": "builtin", "key": "phone", "required": True, "label": "WhatsApp"},
                 {"kind": "builtin", "key": "state", "required": True, "label": "Provincia",
                  "allowed_states": [{"code": "CDMX", "label": "Ciudad de México"},
@@ -251,3 +246,27 @@ class CustomShapeTests(SimpleTestCase):
             ],
         })
         self.assertEqual(errs, [])
+
+    def test_unknown_kind_rejected(self):
+        errs = validate_form_schema({
+            "version": 1,
+            "fields": _BASE_FIELDS + [{
+                "kind": "wizard", "key": "x", "type": "text",
+                "required": False, "label": "x",
+            }],
+        })
+        self.assertTrue(any(
+            e["path"].endswith(".kind") and "builtin" in e["message"]
+            for e in errs
+        ))
+
+    def test_file_max_size_mb_bool_rejected(self):
+        """Python bool is a subclass of int — guard against silent acceptance."""
+        errs = validate_form_schema({
+            "version": 1,
+            "fields": _BASE_FIELDS + [{
+                "kind": "custom", "key": "f", "type": "file",
+                "required": False, "label": "x", "max_size_mb": True,
+            }],
+        })
+        self.assertTrue(any("max_size_mb" in e["path"] for e in errs))
