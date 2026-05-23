@@ -112,6 +112,14 @@ class Campaign(models.Model):
         luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
         return luminance > 0.55
 
+    form_schema = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Field schema for this campaign's submission form. "
+                  "Leave empty (or '{}') to use the default 9-field schema. "
+                  "See docs/superpowers/specs/2026-05-22-flexible-form-fields-design.md.",
+    )
+
     managers = models.ManyToManyField(
         User, blank=True, related_name='managed_campaigns',
         help_text="Users assigned here can view and manage this campaign and its submissions in the dashboard."
@@ -171,6 +179,11 @@ class Store(models.Model):
     )
     order = models.PositiveIntegerField(default=0, help_text="Lower values appear first.")
     created_at = models.DateTimeField(auto_now_add=True)
+    campaigns = models.ManyToManyField(
+        Campaign, related_name="stores", blank=True,
+        help_text="Campaigns this store appears in. "
+                  "Stores with no campaigns are hidden from all public forms.",
+    )
 
     class Meta:
         ordering = ['order', 'name']
@@ -201,9 +214,9 @@ class Submission(models.Model):
     )
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    state = models.CharField(max_length=100)
-    county = models.CharField(max_length=100)
-    phone = models.CharField(max_length=20)
+    state = models.CharField(max_length=100, blank=True)
+    county = models.CharField(max_length=100, blank=True)
+    phone = models.CharField(max_length=20, blank=True)
     email = models.EmailField()
     store = models.ForeignKey(
         Store, null=True, blank=True,
@@ -214,6 +227,10 @@ class Submission(models.Model):
     image_2 = models.ImageField(upload_to='submissions/%Y/%m/', blank=True, null=True)
     submitted_at = models.DateTimeField(auto_now_add=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
+    extra_data = models.JSONField(
+        default=dict, blank=True,
+        help_text="Custom field values keyed by schema 'key'. Excludes file uploads.",
+    )
 
     is_valid = models.BooleanField(
         default=True,
@@ -380,3 +397,19 @@ def _remove_theme_directory(sender, instance, **kwargs):
     """
     if instance.directory.exists():
         shutil.rmtree(instance.directory)
+
+
+class SubmissionAttachment(models.Model):
+    submission = models.ForeignKey(
+        Submission, on_delete=models.CASCADE, related_name="attachments",
+    )
+    schema_key = models.CharField(max_length=64)
+    file = models.FileField(upload_to="submissions/extras/%Y/%m/")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [("submission", "schema_key")]
+        ordering = ["uploaded_at"]
+
+    def __str__(self):
+        return f"{self.submission_id}:{self.schema_key}"
