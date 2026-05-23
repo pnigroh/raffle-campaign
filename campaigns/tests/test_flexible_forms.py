@@ -108,3 +108,87 @@ class DefaultSchemaTests(TestCase):
         self.assertFalse(by_key["county"]["required"])
         self.assertFalse(by_key["store"]["required"])
         self.assertFalse(by_key["image_2"]["required"])
+
+
+class BuiltinFieldTests(TestCase):
+    def setUp(self):
+        self.domain = Domain.objects.create(hostname="x.test")
+        self.camp = Campaign.objects.create(
+            name="C", slug="c", domain=self.domain,
+            start_date=timezone.now(), end_date=timezone.now() + timedelta(days=1),
+        )
+
+    def test_first_name_is_charfield(self):
+        from campaigns.dynamic_forms import _builtin_field
+        from django import forms
+        f = _builtin_field({"key": "first_name", "required": True, "label": "First"}, self.camp)
+        self.assertIsInstance(f, forms.CharField)
+        self.assertTrue(f.required)
+        self.assertEqual(f.label, "First")
+        self.assertEqual(f.max_length, 100)
+
+    def test_email_is_emailfield(self):
+        from campaigns.dynamic_forms import _builtin_field
+        from django import forms
+        f = _builtin_field({"key": "email", "required": True, "label": "E"}, self.camp)
+        self.assertIsInstance(f, forms.EmailField)
+
+    def test_state_default_choices_are_us_51(self):
+        from campaigns.dynamic_forms import _builtin_field
+        f = _builtin_field({"key": "state", "required": False, "label": "State"}, self.camp)
+        codes = [c for c, _ in f.choices]
+        self.assertIn("CA", codes)
+        self.assertIn("PR", codes)
+        # 50 states + DC + PR = 52 actual codes; + 1 placeholder = 53 total
+        self.assertEqual(len([c for c in codes if c]), 52)
+
+    def test_state_allowed_states_overrides_choices(self):
+        from campaigns.dynamic_forms import _builtin_field
+        f = _builtin_field({
+            "key": "state", "required": True, "label": "Provincia",
+            "allowed_states": [{"code": "CDMX", "label": "Ciudad de México"},
+                               {"code": "JAL", "label": "Jalisco"}],
+        }, self.camp)
+        codes = [c for c, _ in f.choices if c]
+        self.assertEqual(codes, ["CDMX", "JAL"])
+
+    def test_store_filtered_to_campaign(self):
+        from campaigns.dynamic_forms import _builtin_field
+        s_in = Store.objects.create(name="In")
+        s_out = Store.objects.create(name="Out")
+        s_in.campaigns.add(self.camp)
+        # Both stores active; only s_in attached to this campaign.
+        f = _builtin_field({"key": "store", "required": False, "label": "Store"}, self.camp)
+        names = set(f.queryset.values_list("name", flat=True))
+        self.assertEqual(names, {"In"})
+
+    def test_image_is_imagefield(self):
+        from campaigns.dynamic_forms import _builtin_field
+        from django import forms
+        f = _builtin_field({"key": "image_1", "required": False, "label": "Img"}, self.camp)
+        self.assertIsInstance(f, forms.ImageField)
+
+
+class BaseSubmissionFormCleanTests(TestCase):
+    def setUp(self):
+        self.domain = Domain.objects.create(hostname="x.test")
+        self.camp = Campaign.objects.create(
+            name="C", slug="c", domain=self.domain,
+            start_date=timezone.now(), end_date=timezone.now() + timedelta(days=1),
+            allow_multiple_submissions=False,
+        )
+
+    def test_duplicate_email_rejected(self):
+        from django import forms
+        from campaigns.dynamic_forms import BaseSubmissionForm
+        Submission.objects.create(
+            campaign=self.camp,
+            first_name="A", last_name="B", email="a@b.com",
+        )
+
+        class F(BaseSubmissionForm):
+            email = forms.EmailField()
+
+        form = F({"email": "a@b.com"}, campaign=self.camp)
+        form.is_valid()
+        self.assertIn("email", form.errors)
