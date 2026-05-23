@@ -460,3 +460,35 @@ class SubmissionViewTests(TestCase):
         self.assertEqual(resp.status_code, 302)
         sub = Submission.objects.get(campaign=self.camp, email="x2@y.com")
         self.assertEqual(sub.extra_data["why"], "because reasons")
+
+
+class TemplateTagTests(TestCase):
+    def test_getfield_returns_boundfield(self):
+        from django.template import Context, Template
+        from campaigns.dynamic_forms import build_form_class
+
+        domain = Domain.objects.create(hostname="y.test")
+        camp = Campaign.objects.create(
+            name="C", slug="c", domain=domain,
+            start_date=timezone.now(), end_date=timezone.now() + timedelta(days=1),
+        )
+        FormCls = build_form_class(camp)
+        form = FormCls(campaign=camp)
+        tpl = Template('{% load dynamic_form_tags %}{{ form|getfield:"first_name" }}')
+        out = tpl.render(Context({"form": form}))
+        self.assertIn('name="first_name"', out)
+
+    def test_getfield_missing_returns_empty(self):
+        from django.template import Context, Template
+        from campaigns.dynamic_forms import build_form_class
+
+        domain = Domain.objects.create(hostname="y2.test")
+        camp = Campaign.objects.create(
+            name="C", slug="c", domain=domain,
+            start_date=timezone.now(), end_date=timezone.now() + timedelta(days=1),
+        )
+        FormCls = build_form_class(camp)
+        form = FormCls(campaign=camp)
+        tpl = Template('{% load dynamic_form_tags %}{{ form|getfield:"nope" }}|')
+        out = tpl.render(Context({"form": form}))
+        self.assertEqual(out, "|")

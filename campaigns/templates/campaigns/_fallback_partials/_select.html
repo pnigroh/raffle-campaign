@@ -1,0 +1,7 @@
+<div class="ff-field ff-field--select">
+  <label for="{{ field.id_for_label }}">
+    {{ spec.label }}{% if spec.required %} *{% endif %}
+  </label>
+  {{ field }}
+  {% if field.errors %}<p class="ff-error">{{ field.errors|join:" " }}</p>{% endif %}
+</div>

@@ -1,0 +1,7 @@
+<div class="ff-field ff-field--checkbox">
+  <label>
+    {{ field }}
+    {{ spec.label }}{% if spec.required %} *{% endif %}
+  </label>
+  {% if field.errors %}<p class="ff-error">{{ field.errors|join:" " }}</p>{% endif %}
+</div>
