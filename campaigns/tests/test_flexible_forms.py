@@ -78,3 +78,33 @@ class BackfillTests(TestCase):
 
         self.assertEqual(set(s1.campaigns.all()), {c1, c2})
         self.assertEqual(set(s2.campaigns.all()), {c1, c2})
+
+
+class DefaultSchemaTests(TestCase):
+    def test_default_schema_passes_validator(self):
+        from campaigns.dynamic_forms import _default_schema
+        from campaigns.schema_validator import validate_form_schema
+        self.assertEqual(validate_form_schema(_default_schema()), [])
+
+    def test_default_schema_field_order_matches_today(self):
+        """Verify the 9 fields appear in the legacy order/labels."""
+        from campaigns.dynamic_forms import _default_schema
+        keys = [f["key"] for f in _default_schema()["fields"]]
+        self.assertEqual(keys, [
+            "first_name", "last_name", "email", "phone",
+            "state", "county", "store", "image_1", "image_2",
+        ])
+
+    def test_default_schema_required_flags_match_today(self):
+        from campaigns.dynamic_forms import _default_schema
+        by_key = {f["key"]: f for f in _default_schema()["fields"]}
+        # Today: first/last/email required; everything else optional (legacy
+        # SubmissionForm forced county.required=False at __init__; phone, state,
+        # store, images all rendered as optional).
+        self.assertTrue(by_key["first_name"]["required"])
+        self.assertTrue(by_key["last_name"]["required"])
+        self.assertTrue(by_key["email"]["required"])
+        self.assertFalse(by_key["state"]["required"])
+        self.assertFalse(by_key["county"]["required"])
+        self.assertFalse(by_key["store"]["required"])
+        self.assertFalse(by_key["image_2"]["required"])
