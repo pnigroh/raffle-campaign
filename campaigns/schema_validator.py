@@ -85,7 +85,7 @@ def _validate_allowed_states(value, path):
     for i, item in enumerate(value):
         ipath = f"{path}[{i}]"
         if not isinstance(item, dict) or "code" not in item or "label" not in item:
-            errs.append({"path": ipath, "message": "must be {code,label}"})
+            errs.append({"path": ipath, "message": "each entry must have 'code' and 'label' keys"})
             continue
         code = item["code"]
         if code in seen:
