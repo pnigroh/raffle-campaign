@@ -29,9 +29,10 @@ def _default_schema():
 
 
 from django import forms
+from django.utils import timezone
 
 from .forms import US_STATES  # the 51-state list
-from .models import Store, Submission, SubmissionCode
+from .models import Store, Submission, SubmissionAttachment, SubmissionCode
 
 
 class BaseSubmissionForm(forms.Form):
@@ -257,3 +258,53 @@ def build_form_class(campaign):
         (BaseSubmissionForm,),
         {**field_dict, "Meta": Meta},
     )
+
+
+_BUILTIN_COLUMN_KEYS = {
+    "first_name", "last_name", "email", "phone",
+    "state", "county", "store", "image_1", "image_2",
+}
+
+# Keys for fields that tolerate NULL (FK / ImageField); everything else gets ""
+_NULLABLE_BUILTIN_KEYS = {"image_1", "image_2", "store"}
+
+
+def save_submission(form, campaign, ip_address=None):
+    """Persist a cleaned dynamic form. Returns the new Submission."""
+    sub = Submission(campaign=campaign, ip_address=ip_address)
+    extra = {}
+    attachments = []
+
+    for spec in form.Meta.field_specs:
+        key = spec["key"]
+        value = form.cleaned_data.get(key)
+        if spec["kind"] == "builtin" and key in _BUILTIN_COLUMN_KEYS:
+            if value is None and key not in _NULLABLE_BUILTIN_KEYS:
+                value = ""
+            setattr(sub, key, value)
+        elif spec["kind"] == "custom":
+            if spec["type"] == "file":
+                if value:
+                    attachments.append((key, value))
+            else:
+                extra[key] = value
+
+    sub.extra_data = extra
+
+    sc = form.cleaned_data.get("submission_code_obj")
+    if sc:
+        sub.submission_code = sc
+
+    sub.save()
+
+    for key, fileobj in attachments:
+        SubmissionAttachment.objects.create(
+            submission=sub, schema_key=key, file=fileobj,
+        )
+
+    if sc:
+        sc.is_used = True
+        sc.used_at = timezone.now()
+        sc.save()
+
+    return sub

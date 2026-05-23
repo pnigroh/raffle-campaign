@@ -314,3 +314,101 @@ class BuildFormClassTests(TestCase):
         FormCls = build_form_class(self.camp)
         # Default schema → first_name in fields
         self.assertIn("first_name", FormCls.base_fields)
+
+
+class SaveSubmissionTests(TestCase):
+    def setUp(self):
+        self.domain = Domain.objects.create(hostname="x.test")
+        self.camp = Campaign.objects.create(
+            name="C", slug="c", domain=self.domain,
+            start_date=timezone.now(), end_date=timezone.now() + timedelta(days=1),
+            allow_multiple_submissions=True,
+            validate_submission_code=False,
+        )
+
+    def _post(self, data, files=None):
+        from campaigns.dynamic_forms import build_form_class
+        FormCls = build_form_class(self.camp)
+        form = FormCls(data, files or {}, campaign=self.camp)
+        self.assertTrue(form.is_valid(), msg=form.errors.as_text())
+        return form
+
+    def test_builtins_land_in_columns(self):
+        from campaigns.dynamic_forms import save_submission
+        self.camp.form_schema = {"version": 1, "fields": [
+            {"kind": "builtin", "key": "first_name", "required": True, "label": "F"},
+            {"kind": "builtin", "key": "last_name",  "required": True, "label": "L"},
+            {"kind": "builtin", "key": "email",      "required": True, "label": "E"},
+            {"kind": "builtin", "key": "phone",      "required": False, "label": "P"},
+        ]}
+        self.camp.save()
+        form = self._post({"first_name": "Ada", "last_name": "L", "email": "a@b.com",
+                           "phone": "555-1212"})
+        sub = save_submission(form, self.camp, ip_address="1.2.3.4")
+        self.assertEqual(sub.first_name, "Ada")
+        self.assertEqual(sub.phone, "555-1212")
+        self.assertEqual(sub.ip_address, "1.2.3.4")
+        self.assertEqual(sub.extra_data, {})
+
+    def test_custom_non_file_lands_in_extra_data(self):
+        from campaigns.dynamic_forms import save_submission
+        self.camp.form_schema = {"version": 1, "fields": [
+            {"kind": "builtin", "key": "first_name", "required": True, "label": "F"},
+            {"kind": "builtin", "key": "last_name",  "required": True, "label": "L"},
+            {"kind": "builtin", "key": "email",      "required": True, "label": "E"},
+            {"kind": "custom", "key": "why", "type": "textarea",
+             "required": False, "label": "Why"},
+            {"kind": "custom", "key": "size", "type": "select", "required": True,
+             "label": "Size", "options": [{"value": "s", "label": "S"},
+                                          {"value": "m", "label": "M"}]},
+            {"kind": "custom", "key": "ok", "type": "checkbox", "required": True,
+             "label": "18+"},
+        ]}
+        self.camp.save()
+        form = self._post({
+            "first_name": "Ada", "last_name": "L", "email": "a2@b.com",
+            "why": "because", "size": "m", "ok": True,
+        })
+        sub = save_submission(form, self.camp)
+        self.assertEqual(sub.extra_data, {"why": "because", "size": "m", "ok": True})
+
+    def test_custom_file_lands_in_attachment(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from campaigns.dynamic_forms import save_submission
+
+        self.camp.form_schema = {"version": 1, "fields": [
+            {"kind": "builtin", "key": "first_name", "required": True, "label": "F"},
+            {"kind": "builtin", "key": "last_name",  "required": True, "label": "L"},
+            {"kind": "builtin", "key": "email",      "required": True, "label": "E"},
+            {"kind": "custom", "key": "receipt2", "type": "file",
+             "required": False, "label": "R2", "max_size_mb": 5},
+        ]}
+        self.camp.save()
+        form = self._post(
+            {"first_name": "A", "last_name": "B", "email": "a3@b.com"},
+            files={"receipt2": SimpleUploadedFile(
+                "r.png", b"x" * 100, content_type="image/png")},
+        )
+        sub = save_submission(form, self.camp)
+        att = sub.attachments.get(schema_key="receipt2")
+        self.assertTrue(att.file.name.endswith(".png"))
+        # extra_data did NOT capture the file
+        self.assertNotIn("receipt2", sub.extra_data)
+
+    def test_submission_code_consumed(self):
+        from campaigns.dynamic_forms import save_submission
+        self.camp.validate_submission_code = True
+        self.camp.form_schema = {}  # default — has only built-ins
+        self.camp.save()
+
+        from campaigns.models import SubmissionCode
+        sc = SubmissionCode.objects.create(campaign=self.camp, code="ABC123")
+
+        form = self._post({
+            "first_name": "A", "last_name": "B", "email": "code@b.com",
+            "submission_code_input": "ABC123",
+        })
+        sub = save_submission(form, self.camp)
+        sc.refresh_from_db()
+        self.assertTrue(sc.is_used)
+        self.assertEqual(sub.submission_code_id, sc.id)
