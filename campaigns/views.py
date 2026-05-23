@@ -11,7 +11,8 @@ from django.http.request import split_domain_port
 import json
 
 from .models import Campaign, Prize, Submission, SubmissionCode, Raffle, RaffleWinner, Theme
-from .forms import SubmissionForm, RaffleSegmentForm, CodeImportForm, PrizeForm
+from .forms import RaffleSegmentForm, CodeImportForm, PrizeForm
+from .dynamic_forms import build_form_class, save_submission
 from .utils import import_codes_from_csv, conduct_raffle, export_winners_csv, export_submissions_csv
 
 
@@ -72,40 +73,30 @@ def _render_theme_template(request, campaign, template_name, context):
 def submission_form(request, campaign_slug):
     campaign = _get_campaign_for_host(request, campaign_slug)
     now = timezone.now()
-
     campaign_open = campaign.start_date <= now <= campaign.end_date
 
-    if request.method == 'POST':
+    FormCls = build_form_class(campaign)
+
+    if request.method == "POST":
         if not campaign_open:
-            messages.error(request, 'This campaign is not currently accepting submissions.')
-            return redirect('submission_form', campaign_slug=campaign_slug)
+            messages.error(request, "This campaign is not currently accepting submissions.")
+            return redirect("submission_form", campaign_slug=campaign_slug)
 
-        form = SubmissionForm(request.POST, request.FILES, campaign=campaign)
+        form = FormCls(request.POST, request.FILES, campaign=campaign)
         if form.is_valid():
-            submission = form.save(commit=False)
-            submission.campaign = campaign
-            x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-            if x_forwarded_for:
-                submission.ip_address = x_forwarded_for.split(',')[0]
-            else:
-                submission.ip_address = request.META.get('REMOTE_ADDR')
-
-            sc = form.cleaned_data.get('submission_code_obj')
-            if sc:
-                submission.submission_code = sc
-                sc.is_used = True
-                sc.used_at = timezone.now()
-                sc.save()
-
-            submission.save()
-            return redirect('submission_success', campaign_slug=campaign_slug)
+            x_fwd = request.META.get("HTTP_X_FORWARDED_FOR")
+            ip = (x_fwd.split(",")[0] if x_fwd
+                  else request.META.get("REMOTE_ADDR"))
+            save_submission(form, campaign, ip_address=ip)
+            return redirect("submission_success", campaign_slug=campaign_slug)
     else:
-        form = SubmissionForm(campaign=campaign)
+        form = FormCls(campaign=campaign)
 
     return _render_theme_template(request, campaign, "submission_form.html", {
-        'campaign': campaign,
-        'form': form,
-        'campaign_open': campaign_open,
+        "campaign": campaign,
+        "form": form,
+        "form_fields": FormCls.Meta.field_specs,
+        "campaign_open": campaign_open,
     })
 
 
@@ -116,14 +107,16 @@ def submission_success(request, campaign_slug):
 
 def submission_form_preview(request, campaign_slug, variant):
     from django.http import Http404
-    if variant not in ('a', 'b', 'c'):
+    if variant not in ("a", "b", "c"):
         raise Http404("Unknown preview variant")
     campaign = _get_campaign_for_host(request, campaign_slug)
-    form = SubmissionForm(campaign=campaign)
+    FormCls = build_form_class(campaign)
+    form = FormCls(campaign=campaign)
     return _render_theme_template(request, campaign, "submission_form.html", {
-        'campaign': campaign,
-        'form': form,
-        'campaign_open': True,
+        "campaign": campaign,
+        "form": form,
+        "form_fields": FormCls.Meta.field_specs,
+        "campaign_open": True,
     })
 
 

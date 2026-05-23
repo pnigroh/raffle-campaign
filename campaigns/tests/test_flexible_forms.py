@@ -412,3 +412,51 @@ class SaveSubmissionTests(TestCase):
         sc.refresh_from_db()
         self.assertTrue(sc.is_used)
         self.assertEqual(sub.submission_code_id, sc.id)
+
+
+class SubmissionViewTests(TestCase):
+    def setUp(self):
+        self.domain = Domain.objects.create(hostname="localhost")
+        self.camp = Campaign.objects.create(
+            name="C", slug="c", domain=self.domain,
+            start_date=timezone.now(), end_date=timezone.now() + timedelta(days=1),
+            allow_multiple_submissions=True,
+            validate_submission_code=False,
+        )
+
+    def test_get_form_with_default_schema_renders(self):
+        from django.test import Client
+        client = Client(HTTP_HOST="localhost")
+        resp = client.get(f"/submit/{self.camp.slug}/")
+        self.assertEqual(resp.status_code, 200)
+        # The theme renders the loop; the default schema's first_name field
+        # ends up as a name attribute on an input
+        self.assertContains(resp, 'name="first_name"')
+
+    def test_post_default_schema_saves(self):
+        from django.test import Client
+        client = Client(HTTP_HOST="localhost", enforce_csrf_checks=False)
+        resp = client.post(f"/submit/{self.camp.slug}/", {
+            "first_name": "X", "last_name": "Y", "email": "x@y.com",
+        })
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(Submission.objects.filter(campaign=self.camp).count(), 1)
+
+    def test_post_custom_schema_writes_extra_data(self):
+        from django.test import Client
+        self.camp.form_schema = {"version": 1, "fields": [
+            {"kind": "builtin", "key": "first_name", "required": True, "label": "F"},
+            {"kind": "builtin", "key": "last_name",  "required": True, "label": "L"},
+            {"kind": "builtin", "key": "email",      "required": True, "label": "E"},
+            {"kind": "custom",  "key": "why", "type": "textarea",
+             "required": False, "label": "Why"},
+        ]}
+        self.camp.save()
+        client = Client(HTTP_HOST="localhost", enforce_csrf_checks=False)
+        resp = client.post(f"/submit/{self.camp.slug}/", {
+            "first_name": "X", "last_name": "Y", "email": "x2@y.com",
+            "why": "because reasons",
+        })
+        self.assertEqual(resp.status_code, 302)
+        sub = Submission.objects.get(campaign=self.camp, email="x2@y.com")
+        self.assertEqual(sub.extra_data["why"], "because reasons")
