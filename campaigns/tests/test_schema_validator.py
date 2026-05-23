@@ -64,3 +64,74 @@ class SchemaValidatorTopLevelTests(SimpleTestCase):
             ],
         })
         self.assertEqual(errs, [])
+
+
+class BuiltinShapeTests(SimpleTestCase):
+
+    def test_unknown_builtin_key_rejected(self):
+        errs = validate_form_schema({
+            "version": 1,
+            "fields": [
+                {"kind": "builtin", "key": "first_name", "required": True, "label": "F"},
+                {"kind": "builtin", "key": "last_name", "required": True, "label": "L"},
+                {"kind": "builtin", "key": "email", "required": True, "label": "E"},
+                {"kind": "builtin", "key": "favorite_color", "required": False, "label": "C"},
+            ],
+        })
+        self.assertTrue(any("favorite_color" in e["message"] for e in errs))
+
+    def test_state_allowed_states_not_a_list_rejected(self):
+        base = [
+            {"kind": "builtin", "key": "first_name", "required": True, "label": "F"},
+            {"kind": "builtin", "key": "last_name", "required": True, "label": "L"},
+            {"kind": "builtin", "key": "email", "required": True, "label": "E"},
+        ]
+        errs = validate_form_schema({
+            "version": 1,
+            "fields": base + [{"kind": "builtin", "key": "state", "required": True,
+                               "label": "S", "allowed_states": "CA"}],
+        })
+        self.assertTrue(any("allowed_states" in e["path"] for e in errs))
+
+    def test_state_allowed_states_entry_missing_code_rejected(self):
+        base = [
+            {"kind": "builtin", "key": "first_name", "required": True, "label": "F"},
+            {"kind": "builtin", "key": "last_name", "required": True, "label": "L"},
+            {"kind": "builtin", "key": "email", "required": True, "label": "E"},
+        ]
+        errs = validate_form_schema({
+            "version": 1,
+            "fields": base + [{"kind": "builtin", "key": "state", "required": True,
+                               "label": "S", "allowed_states": [{"label": "California"}]}],
+        })
+        self.assertTrue(any("allowed_states" in e["path"] for e in errs))
+
+    def test_state_allowed_states_duplicate_codes_rejected(self):
+        base = [
+            {"kind": "builtin", "key": "first_name", "required": True, "label": "F"},
+            {"kind": "builtin", "key": "last_name", "required": True, "label": "L"},
+            {"kind": "builtin", "key": "email", "required": True, "label": "E"},
+        ]
+        errs = validate_form_schema({
+            "version": 1,
+            "fields": base + [{"kind": "builtin", "key": "state", "required": True,
+                               "label": "S", "allowed_states": [
+                                   {"code": "CA", "label": "California"},
+                                   {"code": "CA", "label": "Cali"},
+                               ]}],
+        })
+        self.assertTrue(any("duplicate" in e["message"].lower() for e in errs))
+
+    def test_state_allowed_states_empty_is_valid(self):
+        """Empty list → consumer falls back to default 51."""
+        base = [
+            {"kind": "builtin", "key": "first_name", "required": True, "label": "F"},
+            {"kind": "builtin", "key": "last_name", "required": True, "label": "L"},
+            {"kind": "builtin", "key": "email", "required": True, "label": "E"},
+        ]
+        errs = validate_form_schema({
+            "version": 1,
+            "fields": base + [{"kind": "builtin", "key": "state", "required": True,
+                               "label": "S", "allowed_states": []}],
+        })
+        self.assertEqual(errs, [])

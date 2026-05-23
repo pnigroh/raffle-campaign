@@ -34,6 +34,16 @@ def validate_form_schema(schema):
         errors.append({"path": "fields", "message": "fields must be a list"})
         return errors
 
+    for idx, entry in enumerate(fields):
+        path = f"fields[{idx}]"
+        if not isinstance(entry, dict):
+            errors.append({"path": path, "message": "entry must be an object"})
+            continue
+        kind = entry.get("kind")
+        if kind == "builtin":
+            errors += _validate_builtin(entry, path)
+        # custom entry validation lands in the next task
+
     for required_key in IRREDUCIBLE_REQUIRED:
         matching = [
             f for f in fields
@@ -53,3 +63,32 @@ def validate_form_schema(schema):
             })
 
     return errors
+
+
+def _validate_builtin(entry, path):
+    errs = []
+    key = entry.get("key")
+    if key not in ALLOWED_BUILTIN_KEYS:
+        errs.append({"path": f"{path}.key",
+                     "message": f"'{key}' is not an allowed builtin key"})
+        return errs
+    if key == "state" and "allowed_states" in entry:
+        errs += _validate_allowed_states(entry["allowed_states"], f"{path}.allowed_states")
+    return errs
+
+
+def _validate_allowed_states(value, path):
+    errs = []
+    if not isinstance(value, list):
+        return [{"path": path, "message": "allowed_states must be a list"}]
+    seen = set()
+    for i, item in enumerate(value):
+        ipath = f"{path}[{i}]"
+        if not isinstance(item, dict) or "code" not in item or "label" not in item:
+            errs.append({"path": ipath, "message": "must be {code,label}"})
+            continue
+        code = item["code"]
+        if code in seen:
+            errs.append({"path": ipath, "message": f"duplicate code '{code}'"})
+        seen.add(code)
+    return errs
