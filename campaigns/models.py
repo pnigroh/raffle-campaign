@@ -75,6 +75,13 @@ class Campaign(models.Model):
         null=True,
         blank=True,
     )
+    form_schema = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Field schema for this campaign's submission form. "
+                  "Leave empty (or '{}') to use the default 9-field schema. "
+                  "See docs/superpowers/specs/2026-05-22-flexible-form-fields-design.md.",
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -111,14 +118,6 @@ class Campaign(models.Model):
             return True
         luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
         return luminance > 0.55
-
-    form_schema = models.JSONField(
-        default=dict,
-        blank=True,
-        help_text="Field schema for this campaign's submission form. "
-                  "Leave empty (or '{}') to use the default 9-field schema. "
-                  "See docs/superpowers/specs/2026-05-22-flexible-form-fields-design.md.",
-    )
 
     managers = models.ManyToManyField(
         User, blank=True, related_name='managed_campaigns',

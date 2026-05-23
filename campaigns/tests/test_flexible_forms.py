@@ -1,6 +1,9 @@
+from datetime import timedelta
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import IntegrityError
 from django.test import TestCase
 from django.utils import timezone
-from datetime import timedelta
+
 from campaigns.models import Campaign, Domain, Store, Submission, SubmissionAttachment
 
 
@@ -27,9 +30,6 @@ class ModelShapeTests(TestCase):
         self.assertEqual(sub.extra_data, {})
 
     def test_submission_attachment_unique_per_submission_key(self):
-        from django.db import IntegrityError
-        from django.core.files.uploadedfile import SimpleUploadedFile
-
         sub = Submission.objects.create(
             campaign=self.camp, first_name="A", last_name="B", email="a@b.com",
         )
