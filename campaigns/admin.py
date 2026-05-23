@@ -293,6 +293,7 @@ class StoreAdmin(ModelAdmin):
     list_filter = ['is_active']
     search_fields = ['name']
     ordering = ['order', 'name']
+    filter_horizontal = ('campaigns',)
 
     def submission_count(self, obj):
         return obj.submissions.count()
