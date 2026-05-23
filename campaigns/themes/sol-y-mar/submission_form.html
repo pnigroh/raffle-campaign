@@ -300,79 +300,24 @@
         </div>
       </header>
 
-      {% if form.non_field_errors or form.errors %}
-        <div class="form-errors">
-          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-          {% for field in form %}
-            {% for error in field.errors %}<p>{{ field.label|default:field.name }}: {{ error }}</p>{% endfor %}
-          {% endfor %}
-        </div>
-      {% endif %}
-
       <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
+        {% load dynamic_form_tags %}
 
-        <p class="label">~ tu nombre ~</p>
-        <div class="row-2">
-          <div class="field">
-            <label for="id_first_name">First name</label>
-            <input type="text" id="id_first_name" name="first_name" placeholder="Isabela" autocomplete="given-name" required>
-          </div>
-          <div class="field">
-            <label for="id_last_name">Last name</label>
-            <input type="text" id="id_last_name" name="last_name" placeholder="Vega" autocomplete="family-name" required>
-          </div>
-        </div>
+        {% if form.non_field_errors %}
+          <div class="form-errors">{{ form.non_field_errors }}</div>
+        {% endif %}
 
-        <p class="label">~ cómo te encontramos ~</p>
-        <div class="row-2">
-          <div class="field">
-            <label for="id_email">Email</label>
-            <input type="email" id="id_email" name="email" placeholder="hola@you.co" autocomplete="email" inputmode="email" required>
-          </div>
-          <div class="field">
-            <label for="id_phone">Phone</label>
-            <input type="tel" id="id_phone" name="phone" placeholder="(555) 000-0000" autocomplete="tel" inputmode="tel" required>
-          </div>
-        </div>
+        {% for spec in form_fields %}
+          {% theme_partial spec=spec %}
+        {% endfor %}
 
-        <p class="label">~ dónde encontraste Sol y Mar ~</p>
-        <div class="row-3">
-          <div class="field">
-            <label for="id_state">State</label>
-            <select id="id_state" name="state">
-              <option value="">Elige un estado</option>
-              {% for code, label in form.fields.state.choices %}
-                {% if code %}<option value="{{ code }}">{{ label }}</option>{% endif %}
-              {% endfor %}
-            </select>
+        {% if form.submission_code_input %}
+          <div class="ff-field ff-field--code">
+            {{ form.submission_code_input.label_tag }}
+            {{ form.submission_code_input }}
           </div>
-          <div class="field">
-            <label for="id_county">County</label>
-            <input type="text" id="id_county" name="county" placeholder="Optional">
-          </div>
-          <div class="field">
-            <label for="id_store">Store</label>
-            <select id="id_store" name="store">
-              <option value="">¿Dónde lo compraste?</option>
-              {% for choice in form.fields.store.queryset %}
-                <option value="{{ choice.id }}">{{ choice.name }}</option>
-              {% endfor %}
-            </select>
-          </div>
-        </div>
-
-        <p class="label">~ tu recibo ~</p>
-        <div class="upload" id="upBox">
-          <input type="file" id="id_image_1" name="image_1" accept="image/*">
-          <p class="upload-mark">✿</p>
-          <p class="upload-hint">Drop a photo or <b>browse</b></p>
-          <p class="upload-sub">JPG, PNG, or WebP · up to 10 MB</p>
-          <p class="upload-name" id="upName"></p>
-        </div>
-
-        <input type="hidden" name="image_2" value="">
-        <input type="hidden" name="submission_code_input" value="">
+        {% endif %}
 
         <div class="submit-wrap">
           <button type="submit" class="btn">Entrar al sorteo</button>

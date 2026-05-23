@@ -289,17 +289,24 @@
       <h1>POWER UP<br>YOUR <span>SETUP.</span></h1>
       <p class="lede">Drop a receipt from any participating retailer. Three reward tiers. One global draw on {{ campaign.end_date|date:"M j" }}. No bots. No bullshit.</p>
 
-      {% if form.non_field_errors or form.errors %}
-        <div class="form-errors">
-          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-          {% for field in form %}
-            {% for error in field.errors %}<p>{{ field.label|default:field.name }}: {{ error }}</p>{% endfor %}
-          {% endfor %}
-        </div>
-      {% endif %}
-
       <form id="entry" method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
+        {% load dynamic_form_tags %}
+
+        {% if form.non_field_errors %}
+          <div class="form-errors">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        {% for spec in form_fields %}
+          {% theme_partial spec=spec %}
+        {% endfor %}
+
+        {% if form.submission_code_input %}
+          <div class="ff-field ff-field--code">
+            {{ form.submission_code_input.label_tag }}
+            {{ form.submission_code_input }}
+          </div>
+        {% endif %}
 
         <ol class="stepper" aria-label="Levels">
           <li class="stepper-item is-active" data-step-indicator="1">
@@ -319,85 +326,20 @@
           </li>
         </ol>
 
-        <!-- Step 1: Identify -->
+        <!-- Step containers preserved for JS scaffold; fields now rendered above via dynamic loop -->
         <fieldset class="step is-active" data-step="1">
           <h2 class="step-title">LEVEL 01 // <span>IDENTIFY</span></h2>
           <p class="step-hint">Standard issue. We need a callsign and a comms channel.</p>
-
-          <div class="row-2">
-            <div class="field">
-              <label for="id_first_name">First Name</label>
-              <input type="text" id="id_first_name" name="first_name" autocomplete="given-name" placeholder="Kai" required>
-            </div>
-            <div class="field">
-              <label for="id_last_name">Last Name</label>
-              <input type="text" id="id_last_name" name="last_name" autocomplete="family-name" placeholder="Reyes" required>
-            </div>
-          </div>
-          <div class="row-2">
-            <div class="field">
-              <label for="id_email">Email</label>
-              <input type="email" id="id_email" name="email" autocomplete="email" inputmode="email" placeholder="player@arena.gg" required>
-            </div>
-            <div class="field">
-              <label for="id_phone">Phone</label>
-              <input type="tel" id="id_phone" name="phone" autocomplete="tel" inputmode="tel" placeholder="(555) 000-0000" required>
-            </div>
-          </div>
         </fieldset>
 
-        <!-- Step 2: Locate -->
         <fieldset class="step" data-step="2">
           <h2 class="step-title">LEVEL 02 // <span>LOCATE</span></h2>
           <p class="step-hint">Drop your coordinates. We ship globally; this just routes the dispatch.</p>
-
-          <div class="row-2">
-            <div class="field">
-              <label for="id_state">State</label>
-              <select id="id_state" name="state">
-                <option value="">Select state</option>
-                {% for code, label in form.fields.state.choices %}
-                  {% if code %}<option value="{{ code }}">{{ label }}</option>{% endif %}
-                {% endfor %}
-              </select>
-            </div>
-            <div class="field">
-              <label for="id_county">County</label>
-              <input type="text" id="id_county" name="county" placeholder="Optional">
-            </div>
-          </div>
-          <div class="field">
-            <label for="id_store">Retailer</label>
-            <select id="id_store" name="store">
-              <option value="">Where did you score it?</option>
-              {% for choice in form.fields.store.queryset %}
-                <option value="{{ choice.id }}">{{ choice.name }}</option>
-              {% endfor %}
-            </select>
-          </div>
         </fieldset>
 
-        <!-- Step 3: Power Up -->
         <fieldset class="step" data-step="3">
           <h2 class="step-title">LEVEL 03 // <span>POWER UP</span></h2>
           <p class="step-hint">Upload your receipt. Selfie is optional but doubles your meme potential.</p>
-
-          <div class="upload-grid">
-            <div class="upload" id="up1">
-              <input type="file" id="id_image_1" name="image_1" accept="image/*">
-              <span class="upload-label">[01] Receipt</span>
-              <p class="upload-hint">Drop or browse</p>
-              <p class="upload-name" id="n1"></p>
-            </div>
-            <div class="upload" id="up2">
-              <input type="file" id="id_image_2" name="image_2" accept="image/*">
-              <span class="upload-label">[02] Selfie · optional</span>
-              <p class="upload-hint">Show your loadout</p>
-              <p class="upload-name" id="n2"></p>
-            </div>
-          </div>
-
-          <input type="hidden" name="submission_code_input" value="">
         </fieldset>
 
         <noscript class="all-steps-noscript">

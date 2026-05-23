@@ -225,17 +225,13 @@
       <p class="topbar-tag">spoil your best friend ♥</p>
     </header>
 
-    {% if form.non_field_errors or form.errors %}
-      <div class="form-errors">
-        {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-        {% for field in form %}
-          {% for error in field.errors %}<p>{{ field.label|default:field.name }}: {{ error }}</p>{% endfor %}
-        {% endfor %}
-      </div>
-    {% endif %}
-
     <form method="post" enctype="multipart/form-data" novalidate>
       {% csrf_token %}
+      {% load dynamic_form_tags %}
+
+      {% if form.non_field_errors %}
+        <div class="form-errors">{{ form.non_field_errors }}</div>
+      {% endif %}
 
       <div class="bento">
 
@@ -261,79 +257,19 @@
           </div>
         </div>
 
-        <!-- Name -->
+        <!-- Dynamic fields rendered here -->
         <div class="cell cell--name">
-          <p class="label"><span class="badge">01</span> About you</p>
-          <div class="row-2">
-            <div class="field">
-              <label for="id_first_name">First name</label>
-              <input type="text" id="id_first_name" name="first_name" placeholder="Alex" autocomplete="given-name" required>
+          <p class="label"><span class="badge">01</span> Your details</p>
+          {% for spec in form_fields %}
+            {% theme_partial spec=spec %}
+          {% endfor %}
+          {% if form.submission_code_input %}
+            <div class="ff-field ff-field--code">
+              {{ form.submission_code_input.label_tag }}
+              {{ form.submission_code_input }}
             </div>
-            <div class="field">
-              <label for="id_last_name">Last name</label>
-              <input type="text" id="id_last_name" name="last_name" placeholder="Morgan" autocomplete="family-name" required>
-            </div>
-          </div>
+          {% endif %}
         </div>
-
-        <!-- Contact -->
-        <div class="cell cell--contact">
-          <p class="label"><span class="badge" style="background:#fff">02</span> Contact</p>
-          <div class="field">
-            <label for="id_email">Email</label>
-            <input type="email" id="id_email" name="email" placeholder="hi@you.co" autocomplete="email" inputmode="email" required>
-          </div>
-          <div class="field">
-            <label for="id_phone">Phone</label>
-            <input type="tel" id="id_phone" name="phone" placeholder="(555) 000-0000" autocomplete="tel" inputmode="tel" required>
-          </div>
-        </div>
-
-        <!-- Where -->
-        <div class="cell cell--where">
-          <p class="label"><span class="badge">03</span> Where to ship the goodies</p>
-          <div class="row-3">
-            <div class="field">
-              <label for="id_state">State</label>
-              <select id="id_state" name="state">
-                <option value="">Pick one</option>
-                {% for code, label in form.fields.state.choices %}
-                  {% if code %}<option value="{{ code }}">{{ label }}</option>{% endif %}
-                {% endfor %}
-              </select>
-            </div>
-            <div class="field">
-              <label for="id_county">County</label>
-              <input type="text" id="id_county" name="county" placeholder="Optional">
-            </div>
-            <div class="field">
-              <label for="id_store">Where you bought Pawly</label>
-              <select id="id_store" name="store">
-                <option value="">Choose a store</option>
-                {% for choice in form.fields.store.queryset %}
-                  <option value="{{ choice.id }}">{{ choice.name }}</option>
-                {% endfor %}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Upload -->
-        <div class="cell cell--upload">
-          <p class="label" style="color:rgba(57,62,70,.7)"><span class="badge" style="background:#fff">04</span> Receipt</p>
-          <label class="upload-card" id="upBox">
-            <input type="file" id="id_image_1" name="image_1" accept="image/*">
-            <div class="upload-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="28" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            </div>
-            <p class="upload-hint">Drop your receipt</p>
-            <p class="upload-sub">PNG or JPG · up to 10 MB</p>
-            <p class="upload-name" id="upName"></p>
-          </label>
-        </div>
-
-        <input type="hidden" name="image_2" value="">
-        <input type="hidden" name="submission_code_input" value="">
 
         <!-- Submit -->
         <div class="cell cell--submit">

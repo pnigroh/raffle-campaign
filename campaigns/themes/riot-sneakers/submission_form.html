@@ -257,76 +257,24 @@
       <h2 class="section-title"><span class="num">01</span>REGISTER OR LOSE OUT</h2>
       <p class="section-sub">SIX FIELDS. TWENTY SECONDS. NO RESUBMISSIONS. ✘ NO EMAIL TYPOS — WE DON'T CHASE YOU.</p>
 
-      {% if form.non_field_errors or form.errors %}
-        <div class="form-errors">
-          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-          {% for field in form %}
-            {% for error in field.errors %}<p>{{ field.label|default:field.name|upper }}: {{ error }}</p>{% endfor %}
-          {% endfor %}
-        </div>
-      {% endif %}
-
       <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
+        {% load dynamic_form_tags %}
 
-        <div class="grid">
-          <div class="field">
-            <label data-num="01" for="id_first_name">First Name</label>
-            <input type="text" id="id_first_name" name="first_name" placeholder="NAME" autocomplete="given-name" required>
-          </div>
-          <div class="field">
-            <label data-num="02" for="id_last_name">Last Name</label>
-            <input type="text" id="id_last_name" name="last_name" placeholder="SURNAME" autocomplete="family-name" required>
-          </div>
-          <div class="field">
-            <label data-num="03" for="id_email">Email</label>
-            <input type="email" id="id_email" name="email" placeholder="YOU@DOMAIN" autocomplete="email" inputmode="email" required>
-          </div>
-          <div class="field">
-            <label data-num="04" for="id_phone">Phone</label>
-            <input type="tel" id="id_phone" name="phone" placeholder="555-000-0000" autocomplete="tel" inputmode="tel" required>
-          </div>
-          <div class="field">
-            <label data-num="05" for="id_state">State</label>
-            <select id="id_state" name="state">
-              <option value="">—— SELECT</option>
-              {% for code, label in form.fields.state.choices %}
-                {% if code %}<option value="{{ code }}">{{ label|upper }}</option>{% endif %}
-              {% endfor %}
-            </select>
-          </div>
-          <div class="field">
-            <label data-num="06" for="id_store">Retailer</label>
-            <select id="id_store" name="store">
-              <option value="">—— SELECT</option>
-              {% for choice in form.fields.store.queryset %}
-                <option value="{{ choice.id }}">{{ choice.name|upper }}</option>
-              {% endfor %}
-            </select>
-          </div>
-        </div>
+        {% if form.non_field_errors %}
+          <div class="form-errors">{{ form.non_field_errors }}</div>
+        {% endif %}
 
-        <input type="hidden" name="county" value="">
-        <input type="hidden" name="submission_code_input" value="">
+        {% for spec in form_fields %}
+          {% theme_partial spec=spec %}
+        {% endfor %}
 
-        <h2 class="section-title" style="margin-top:48px"><span class="num">02</span>PROOF + SELFIE</h2>
-        <p class="section-sub">RECEIPT REQUIRED. SELFIE OPTIONAL. NO RECEIPT = NO PAIRS.</p>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-          <div class="upload" id="up1">
-            <input type="file" id="id_image_1" name="image_1" accept="image/*">
-            <div class="upload-icon" aria-hidden="true">↑</div>
-            <p class="upload-hint">RECEIPT <b>REQUIRED</b></p>
-            <p class="upload-name" id="n1"></p>
+        {% if form.submission_code_input %}
+          <div class="ff-field ff-field--code">
+            {{ form.submission_code_input.label_tag }}
+            {{ form.submission_code_input }}
           </div>
-          <div class="upload" id="up2">
-            <input type="file" id="id_image_2" name="image_2" accept="image/*">
-            <div class="upload-icon" aria-hidden="true" style="background:var(--ink);color:var(--hazard)">★</div>
-            <p class="upload-hint">SELFIE <b>BONUS</b></p>
-            <p class="upload-name" id="n2"></p>
-          </div>
-        </div>
-        <style>@media (max-width:680px){.upload + .upload, [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}}</style>
+        {% endif %}
 
         <div class="submit-wrap">
           <button type="submit" class="btn">→ ENTER THE DRAW ←</button>
