@@ -618,3 +618,30 @@ class ThemePartialTests(TestCase):
                 partials_dir.rmdir()
             except OSError:
                 pass
+
+
+class AdminResetActionTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+        self.admin = User.objects.create_superuser("a2", "a2@a.com", "pw")
+        self.domain = Domain.objects.create(hostname="ra.test")
+        self.camp = Campaign.objects.create(
+            name="C", slug="c", domain=self.domain,
+            form_schema={"version": 1, "fields": [
+                {"kind": "builtin", "key": "first_name", "required": True, "label": "F"},
+                {"kind": "builtin", "key": "last_name",  "required": True, "label": "L"},
+                {"kind": "builtin", "key": "email",      "required": True, "label": "E"},
+            ]},
+            start_date=timezone.now(), end_date=timezone.now() + timedelta(days=1),
+        )
+
+    def test_reset_action_clears_form_schema(self):
+        from django.test import Client
+        client = Client()
+        client.force_login(self.admin)
+        client.post("/admin/campaigns/campaign/", {
+            "action": "reset_form_schema",
+            "_selected_action": [str(self.camp.pk)],
+        }, follow=True)
+        self.camp.refresh_from_db()
+        self.assertEqual(self.camp.form_schema, {})

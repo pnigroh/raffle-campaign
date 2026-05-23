@@ -133,6 +133,13 @@ class CampaignAdmin(ModelAdmin):
     )
     readonly_fields = ['logo_preview', 'palette_preview']
 
+    actions = ("reset_form_schema",)
+
+    @admin.action(description="Reset form schema to default (9-field form)")
+    def reset_form_schema(self, request, queryset):
+        n = queryset.update(form_schema={})
+        self.message_user(request, f"Reset {n} campaign(s) to the default form schema.")
+
     view_on_site = True
 
     def get_view_on_site_url(self, obj=None):
