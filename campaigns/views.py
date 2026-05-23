@@ -145,7 +145,7 @@ def dashboard(request):
 def campaign_detail(request, campaign_id):
     campaign = _get_managed_campaign_or_403(request.user, campaign_id)
 
-    submissions = campaign.submissions.select_related('submission_code').order_by('-submitted_at')
+    submissions = campaign.submissions.select_related('submission_code').prefetch_related('attachments').order_by('-submitted_at')
 
     state_filter = request.GET.get('state', '')
     county_filter = request.GET.get('county', '')

@@ -1,5 +1,5 @@
 from django import forms
-from .models import Campaign, Prize, Store
+from .models import Prize, Store
 
 US_STATES = [
     ('', '-- Select State --'),

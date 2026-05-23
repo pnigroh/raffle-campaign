@@ -7,6 +7,12 @@ Public API:
 
 import logging
 
+from django import forms
+from django.utils import timezone
+
+from .forms import US_STATES  # the 51-state list
+from .models import Store, Submission, SubmissionAttachment, SubmissionCode
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,13 +32,6 @@ def _default_schema():
             {"kind": "builtin", "key": "image_2",    "required": False, "label": "Second photo"},
         ],
     }
-
-
-from django import forms
-from django.utils import timezone
-
-from .forms import US_STATES  # the 51-state list
-from .models import Store, Submission, SubmissionAttachment, SubmissionCode
 
 
 class BaseSubmissionForm(forms.Form):
