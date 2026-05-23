@@ -5,8 +5,8 @@ ALLOWED_BUILTIN_KEYS = {
     "state", "county", "store", "image_1", "image_2",
 }
 IRREDUCIBLE_REQUIRED = ("first_name", "last_name", "email")
-ALLOWED_CUSTOM_TYPES = {"text", "textarea", "select", "checkbox", "file"}
-RESERVED_KEYS = {"csrfmiddlewaretoken", "submission_code_input", "submission_code_obj"}
+ALLOWED_CUSTOM_TYPES = {"text", "textarea", "select", "checkbox", "file"}  # consumed by Task 3
+RESERVED_KEYS = {"csrfmiddlewaretoken", "submission_code_input", "submission_code_obj"}  # consumed by Task 3
 
 
 def validate_form_schema(schema):
@@ -34,10 +34,6 @@ def validate_form_schema(schema):
         errors.append({"path": "fields", "message": "fields must be a list"})
         return errors
 
-    builtin_keys_seen = {
-        f.get("key") for f in fields
-        if isinstance(f, dict) and f.get("kind") == "builtin"
-    }
     for required_key in IRREDUCIBLE_REQUIRED:
         matching = [
             f for f in fields
