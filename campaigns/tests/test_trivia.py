@@ -133,3 +133,63 @@ class TriviaQuestionAdminScopingTests(TestCase):
         req = self._request(self.mgr_hn)
         self.assertFalse(admin.has_delete_permission(req, obj=self.q_gt))
         self.assertTrue(admin.has_delete_permission(req, obj=self.q_hn))
+
+
+from django.urls import reverse
+
+
+class TriviaQuestionViewContextTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.hn = _campaign(slug="hn-view")
+        cls.gt = _campaign(slug="gt-view")
+        cls.q_hn = TriviaQuestion.objects.create(
+            text="HN Q1", option_a="A", option_b="B", option_c="C", correct="a",
+        )
+        cls.q_hn.campaigns.add(cls.hn)
+        cls.q_hn_inactive = TriviaQuestion.objects.create(
+            text="HN inactive", option_a="A", option_b="B", option_c="C",
+            correct="a", is_active=False,
+        )
+        cls.q_hn_inactive.campaigns.add(cls.hn)
+        cls.q_gt = TriviaQuestion.objects.create(
+            text="GT Q1", option_a="A", option_b="B", option_c="C", correct="b",
+        )
+        cls.q_gt.campaigns.add(cls.gt)
+
+    def test_view_injects_trivia_question_for_campaign_with_active_question(self):
+        resp = self.client.get(
+            reverse("submission_form", args=[self.hn.slug]), HTTP_HOST="localhost",
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.context["trivia_question"], self.q_hn)
+
+    def test_view_does_not_pick_inactive_questions(self):
+        for _ in range(8):
+            resp = self.client.get(
+                reverse("submission_form", args=[self.hn.slug]), HTTP_HOST="localhost",
+            )
+            self.assertNotEqual(resp.context["trivia_question"], self.q_hn_inactive)
+
+    def test_view_does_not_pick_questions_assigned_to_other_campaigns(self):
+        for _ in range(8):
+            resp = self.client.get(
+                reverse("submission_form", args=[self.hn.slug]), HTTP_HOST="localhost",
+            )
+            self.assertNotEqual(resp.context["trivia_question"], self.q_gt)
+
+    def test_view_injects_none_when_campaign_has_no_questions(self):
+        empty = _campaign(slug="empty-view")
+        resp = self.client.get(
+            reverse("submission_form", args=[empty.slug]), HTTP_HOST="localhost",
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertIsNone(resp.context["trivia_question"])
+
+    def test_preview_view_also_injects_trivia_question(self):
+        resp = self.client.get(
+            reverse("submission_form_preview", args=[self.hn.slug, "a"]),
+            HTTP_HOST="localhost",
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.context["trivia_question"], self.q_hn)

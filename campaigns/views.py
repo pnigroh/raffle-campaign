@@ -70,6 +70,17 @@ def _render_theme_template(request, campaign, template_name, context):
     return HttpResponse(template.render(context, request))
 
 
+def _pick_trivia_question(campaign):
+    """Return one random active TriviaQuestion assigned to this campaign, or None."""
+    from .models import TriviaQuestion
+    return (
+        TriviaQuestion.objects
+        .filter(campaigns=campaign, is_active=True)
+        .order_by("?")
+        .first()
+    )
+
+
 def submission_form(request, campaign_slug):
     campaign = _get_campaign_for_host(request, campaign_slug)
     now = timezone.now()
@@ -97,6 +108,7 @@ def submission_form(request, campaign_slug):
         "form": form,
         "form_fields": FormCls.Meta.field_specs,
         "campaign_open": campaign_open,
+        "trivia_question": _pick_trivia_question(campaign),
     })
 
 
@@ -117,6 +129,7 @@ def submission_form_preview(request, campaign_slug, variant):
         "form": form,
         "form_fields": FormCls.Meta.field_specs,
         "campaign_open": True,
+        "trivia_question": _pick_trivia_question(campaign),
     })
 
 
