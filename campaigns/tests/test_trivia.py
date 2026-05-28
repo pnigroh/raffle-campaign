@@ -193,3 +193,78 @@ class TriviaQuestionViewContextTests(TestCase):
         )
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.context["trivia_question"], self.q_hn)
+
+
+class TriviaQuestionThemeRenderingTests(TestCase):
+    """Verifies the Futboleros theme renders the trivia step correctly.
+
+    These tests render the actual themes/futboleros/submission_form.html
+    via the view; assertions look at the response body.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.campaign = _campaign(slug="render-test")
+        from campaigns.models import Theme
+        theme, _ = Theme.objects.get_or_create(
+            slug="futboleros", defaults={"name": "Futboleros"},
+        )
+        cls.campaign.theme = theme
+        cls.campaign.save()
+        cls.question = TriviaQuestion.objects.create(
+            text="¿Cuál es la capital de Honduras?",
+            option_a="San Pedro Sula",
+            option_b="Tegucigalpa",
+            option_c="La Ceiba",
+            correct="b",
+        )
+        cls.question.campaigns.add(cls.campaign)
+
+    def _get(self):
+        return self.client.get(
+            reverse("submission_form", args=[self.campaign.slug]),
+            HTTP_HOST="localhost",
+        )
+
+    def test_renders_trivia_section_when_question_present(self):
+        body = self._get().content.decode()
+        self.assertIn('data-step="trivia"', body)
+        self.assertIn("¿Cuál es la capital de Honduras?", body)
+        self.assertIn("Tegucigalpa", body)
+
+    def test_omits_trivia_section_when_no_question(self):
+        empty = _campaign(slug="render-empty")
+        from campaigns.models import Theme
+        empty.theme = Theme.objects.get(slug="futboleros")
+        empty.save()
+        body = self.client.get(
+            reverse("submission_form", args=[empty.slug]),
+            HTTP_HOST="localhost",
+        ).content.decode()
+        self.assertNotIn('data-step="trivia"', body)
+
+    def test_radio_values_are_letters(self):
+        body = self._get().content.decode()
+        self.assertIn('name="trivia" value="a"', body)
+        self.assertIn('name="trivia" value="b"', body)
+        self.assertIn('name="trivia" value="c"', body)
+        self.assertNotIn('name="trivia" value="0"', body)
+
+    def test_js_comparator_uses_correct_letter(self):
+        body = self._get().content.decode()
+        self.assertIn("picked.value === 'b'", body)
+
+    def test_cta_says_finalizar_not_adivinar(self):
+        body = self._get().content.decode()
+        self.assertIn("FINALIZAR", body)
+        self.assertNotIn("ADIVINAR", body)
+        self.assertNotIn("SIGUIENTE", body)
+
+    def test_image_falls_back_when_blank(self):
+        body = self._get().content.decode()
+        self.assertIn("trivia/fallback.png", body)
+
+    def test_nube_blanca_logo_is_present_in_response(self):
+        body = self._get().content.decode()
+        self.assertIn("logo_nube.png", body)
+        self.assertIn('class="brand-logo"', body)

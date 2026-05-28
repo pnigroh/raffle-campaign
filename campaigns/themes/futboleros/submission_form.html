@@ -69,11 +69,15 @@
 
     /* All others use the blurred stadium BG. */
     .stage[data-step="form"],
-    .stage[data-step="trivia"],
     .stage[data-step="success"],
     .stage[data-step="fail"] {
       background-image: url("{% theme_static 'landing/bg_mobile_steps.png' %}");
     }
+    {% if trivia_question %}
+    .stage[data-step="trivia"] {
+      background-image: url("{% theme_static 'landing/bg_mobile_steps.png' %}");
+    }
+    {% endif %}
 
     @media (min-width: 768px) {
       body {
@@ -86,7 +90,6 @@
       .stage,
       .stage[data-step="welcome"],
       .stage[data-step="form"],
-      .stage[data-step="trivia"],
       .stage[data-step="success"],
       .stage[data-step="fail"] {
         background: transparent;
@@ -102,6 +105,22 @@
         align-items: center;
         justify-content: flex-end;
       }
+      {% if trivia_question %}
+      .stage[data-step="trivia"] {
+        background: transparent;
+        background-image: none;
+        box-shadow: none;
+        border-radius: 0;
+        max-width: none;
+        min-height: 100dvh;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-end;
+      }
+      {% endif %}
 
       .step {
         width: 100%;
@@ -118,21 +137,34 @@
 
       .welcome .welcome-spacer { display: none; }
 
-      /* Desktop: logo ALWAYS visible at top-left of viewport on every step.
-         position: fixed bypasses ancestor positioning chain. !important
-         overrides the mobile hide rules for form/trivia. */
+      /* Desktop: logo ALWAYS visible at top-RIGHT of viewport on every step,
+         matching the AI/PDF source. position: fixed bypasses ancestor
+         positioning chain. !important overrides the mobile hide rule for form. */
       .brand-logo,
-      .stage[data-step="form"] .brand-logo,
-      .stage[data-step="trivia"] .brand-logo {
+      .stage[data-step="form"] .brand-logo {
         display: block !important;
         position: fixed;
         top: clamp(24px, 5vh, 80px);
-        left: clamp(24px, 4vw, 96px);
+        right: clamp(24px, 4vw, 96px);
+        left: auto;
         margin: 0 !important;
         width: auto;
         max-width: min(28vw, 360px);
         z-index: 50;
       }
+      {% if trivia_question %}
+      .stage[data-step="trivia"] .brand-logo {
+        display: block !important;
+        position: fixed;
+        top: clamp(24px, 5vh, 80px);
+        right: clamp(24px, 4vw, 96px);
+        left: auto;
+        margin: 0 !important;
+        width: auto;
+        max-width: min(28vw, 360px);
+        z-index: 50;
+      }
+      {% endif %}
 
       .titular {
         margin-top: 0;
@@ -184,9 +216,8 @@
       filter: drop-shadow(0 6px 14px rgba(0,0,0,.22));
     }
 
-    /* Mobile: hide on the form + trivia steps (only show on welcome/success/fail) */
-    .stage[data-step="form"] .brand-logo,
-    .stage[data-step="trivia"] .brand-logo {
+    /* Mobile: hide on the form step only. Welcome/trivia/success/fail show the logo on top. */
+    .stage[data-step="form"] .brand-logo {
       display: none;
     }
 
@@ -468,6 +499,15 @@
       color: var(--ink);
       margin: 14px 0 14px;
     }
+    .trivia-illustration {
+      display: block;
+      margin: 12px auto 18px;
+      max-width: 240px;
+      max-height: 140px;
+      width: 100%;
+      border-radius: 14px;
+      object-fit: cover;
+    }
     .options {
       display: flex;
       flex-direction: column;
@@ -609,6 +649,7 @@
   </section>
 
   <!-- Step 3: Trivia -->
+  {% if trivia_question %}
   <section class="step" data-step="trivia">
     <h1 class="pill-heading">¡YA ESTÁS JUGANDO!</h1>
 
@@ -618,31 +659,36 @@
         te diremos el nivel de pasión futbolera que tienes:
       </p>
 
-      <p class="trivia-prompt">¿En dónde se jugará el Mundial 2026?</p>
+      <p class="trivia-prompt">{{ trivia_question.text }}</p>
 
       <div class="options">
         <label class="option">
-          <input type="radio" name="trivia" value="0">
+          <input type="radio" name="trivia" value="a">
           <span class="dot" aria-hidden="true"></span>
-          <span>Canadá / Estados Unidos / Guatemala</span>
+          <span>{{ trivia_question.option_a }}</span>
         </label>
         <label class="option">
-          <input type="radio" name="trivia" value="1">
+          <input type="radio" name="trivia" value="b">
           <span class="dot" aria-hidden="true"></span>
-          <span>Estados Unidos / México / Alaska</span>
+          <span>{{ trivia_question.option_b }}</span>
         </label>
         <label class="option">
-          <input type="radio" name="trivia" value="2">
+          <input type="radio" name="trivia" value="c">
           <span class="dot" aria-hidden="true"></span>
-          <span>Canadá / Estados Unidos / México</span>
+          <span>{{ trivia_question.option_c }}</span>
         </label>
       </div>
 
+      <img class="trivia-illustration"
+           src="{% if trivia_question.image %}{{ trivia_question.image.url }}{% else %}{% theme_static 'trivia/fallback.png' %}{% endif %}"
+           alt="{{ trivia_question.image_alt|default:trivia_question.text }}">
+
       <div class="center-actions">
-        <button type="button" class="btn btn-wide" id="guessBtn" disabled>ADIVINAR</button>
+        <button type="button" class="btn btn-wide" id="guessBtn" disabled>FINALIZAR</button>
       </div>
     </div>
   </section>
+  {% endif %}
 
   <!-- Step 4: Success -->
   <section class="step" data-step="success">
@@ -781,7 +827,11 @@
           // The backend redirects to /success/ on a valid submission; treat any
           // 2xx response (including the redirect target) as success.
           if (res.ok && res.url && res.url.includes('/success/')) {
+            {% if trivia_question %}
             go('trivia');
+            {% else %}
+            window.location.href = res.url;
+            {% endif %}
             return;
           }
           if (res.ok) {
@@ -815,7 +865,7 @@
       guessBtn.addEventListener('click', () => {
         const picked = document.querySelector('input[name="trivia"]:checked');
         if (!picked) return;
-        go(picked.value === '2' ? 'success' : 'fail');
+        go(picked.value === '{{ trivia_question.correct }}' ? 'success' : 'fail');
       });
     }
   })();

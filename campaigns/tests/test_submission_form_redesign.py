@@ -86,12 +86,13 @@ class SubmissionFormRedesignTitularsTests(TestCase):
         self.assertNotIn("campaigns/landing/titular_anota_datos.png", body)
         self.assertNotIn("campaigns/landing/titular_y_comienza.png", body)
 
-    def test_trivia_step_uses_css_pill_heading(self):
-        # titular_jugando.png is broken (red text on transparent, no pill),
-        # so the trivia step uses the legacy .pill-heading CSS.
+    def test_trivia_step_hidden_when_no_question_assigned(self):
+        # The trivia section is now conditional on a TriviaQuestion being linked
+        # to the campaign. This campaign has none, so the section must be absent.
+        # The broken titular_jugando.png is never referenced either way.
         url = reverse("submission_form", kwargs={"campaign_slug": self.campaign.slug})
         body = self.client.get(url, HTTP_HOST="localhost").content.decode()
-        self.assertIn(">¡YA ESTÁS JUGANDO!<", body)
+        self.assertNotIn('data-step="trivia"', body)
         self.assertNotIn("campaigns/landing/titular_jugando.png", body)
         self.assertNotIn("campaigns/img/title_jugando.png", body)
 
