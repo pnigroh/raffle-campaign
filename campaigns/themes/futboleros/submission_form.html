@@ -137,16 +137,15 @@
 
       .welcome .welcome-spacer { display: none; }
 
-      /* Desktop: logo ALWAYS visible at top-RIGHT of viewport on every step,
-         matching the AI/PDF source. position: fixed bypasses ancestor
-         positioning chain. !important overrides the mobile hide rule for form. */
+      /* Desktop: brand-logo (the "La Nube..." titular) lives at top-LEFT on every
+         step. position: fixed bypasses ancestor positioning chain. !important
+         overrides the mobile hide rules for form/trivia. */
       .brand-logo,
       .stage[data-step="form"] .brand-logo {
         display: block !important;
         position: fixed;
         top: clamp(24px, 5vh, 80px);
-        right: clamp(24px, 4vw, 96px);
-        left: auto;
+        left: clamp(24px, 4vw, 96px);
         margin: 0 !important;
         width: auto;
         max-width: min(28vw, 360px);
@@ -157,14 +156,26 @@
         display: block !important;
         position: fixed;
         top: clamp(24px, 5vh, 80px);
-        right: clamp(24px, 4vw, 96px);
-        left: auto;
+        left: clamp(24px, 4vw, 96px);
         margin: 0 !important;
         width: auto;
         max-width: min(28vw, 360px);
         z-index: 50;
       }
       {% endif %}
+
+      /* Desktop: NUBE BLANCA cloud wordmark lives at top-RIGHT on every step,
+         matching the AI source's upper-right brand mark on slides 30-37. */
+      .nube-blanca-logo {
+        position: fixed;
+        top: clamp(20px, 4vh, 60px);
+        right: clamp(20px, 3vw, 72px);
+        width: auto;
+        max-width: min(14vw, 180px);
+        height: auto;
+        z-index: 50;
+        filter: drop-shadow(0 4px 10px rgba(0,0,0,.22));
+      }
 
       .titular {
         margin-top: 0;
@@ -216,9 +227,27 @@
       filter: drop-shadow(0 6px 14px rgba(0,0,0,.22));
     }
 
-    /* Mobile: hide on the form step only. Welcome/trivia/success/fail show the logo on top. */
+    /* Mobile: brand-logo (the "La Nube..." titular) shows on welcome/success/fail,
+       hides on form (and on trivia when the trivia step is rendered) so the white
+       card has room. */
     .stage[data-step="form"] .brand-logo {
       display: none;
+    }
+    {% if trivia_question %}
+    .stage[data-step="trivia"] .brand-logo {
+      display: none;
+    }
+    {% endif %}
+
+    /* Mobile: NUBE BLANCA cloud wordmark — small, top-right corner on every step. */
+    .nube-blanca-logo {
+      position: fixed;
+      top: clamp(12px, 2.5vh, 28px);
+      right: clamp(12px, 3vw, 24px);
+      width: clamp(64px, 18vw, 96px);
+      height: auto;
+      z-index: 50;
+      filter: drop-shadow(0 3px 8px rgba(0,0,0,.22));
     }
 
     .welcome-pill {
@@ -601,9 +630,13 @@
     </div>
   {% else %}
 
-  <!-- Brand logo: a single element, controlled by CSS per viewport + step -->
+  <!-- Brand logo (the "La Nube..." titular): single element, controlled by CSS per viewport + step -->
   <img class="brand-logo" src="{% theme_static 'landing/logo_nube.png' %}"
        alt="La Nube que te mueve... y te lleva al gol">
+
+  <!-- NUBE BLANCA cloud wordmark: always visible top-right; matches the AI source's brand mark -->
+  <img class="nube-blanca-logo" src="{% theme_static 'landing/logo_nube_blanca.png' %}"
+       alt="Nube Blanca">
 
   <!-- Step 1: Welcome -->
   <section class="step is-active welcome" data-step="welcome">

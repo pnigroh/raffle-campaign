@@ -266,8 +266,12 @@ class TriviaQuestionThemeRenderingTests(TestCase):
 
     def test_nube_blanca_logo_is_present_in_response(self):
         body = self._get().content.decode()
+        # The "La Nube..." titular (brand-logo) AND the NUBE BLANCA cloud
+        # wordmark (nube-blanca-logo) must both render.
         self.assertIn("logo_nube.png", body)
+        self.assertIn("logo_nube_blanca.png", body)
         self.assertIn('class="brand-logo"', body)
+        self.assertIn('class="nube-blanca-logo"', body)
 
 
 class FutbolerosSeedTests(TestCase):
