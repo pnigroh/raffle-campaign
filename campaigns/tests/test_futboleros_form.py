@@ -69,7 +69,7 @@ def _futboleros_campaign(slug, validate_code=False):
         form_schema=SPANISH_SCHEMA,
         validate_submission_code=validate_code,
     )
-    store = Store.objects.create(name="Tienda Uno", is_active=True)
+    store = Store.objects.create(name=f"Tienda {slug}", is_active=True)
     store.campaigns.add(c)
     return c
 
@@ -160,3 +160,57 @@ class StorePlaceholderFieldTests(TestCase):
             campaign,
         )
         self.assertEqual(field.empty_label, "-- Select Store --")
+
+
+class GroupedStoreFieldTests(_IsolatedThemeMixin, TestCase):
+    """The store dropdown groups options into <optgroup>s by Store.group, and
+    leaves the group headings non-selectable. Stores without a group render flat."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.campaign = _futboleros_campaign("ftb-grouped")
+        cls.campaign.stores.clear()
+        teg1 = Store.objects.create(name="El Centavo", group="Tegucigalpa", order=0)
+        teg2 = Store.objects.create(name="Bodega San Juan", group="Tegucigalpa", order=1)
+        sps1 = Store.objects.create(name="Surtidora Sampedrana", group="San Pedro Sula", order=2)
+        for s in (teg1, teg2, sps1):
+            s.campaigns.add(cls.campaign)
+        cls.sps1 = sps1
+
+    def _body(self):
+        return self.client.get(
+            reverse("submission_form", args=[self.campaign.slug]),
+            HTTP_HOST="localhost",
+        ).content.decode()
+
+    def test_cities_render_as_optgroups_not_options(self):
+        body = self._body()
+        self.assertIn('<optgroup label="Tegucigalpa">', body)
+        self.assertIn('<optgroup label="San Pedro Sula">', body)
+        # The city names must NOT appear as selectable <option>s.
+        self.assertNotIn('>Tegucigalpa</option>', body)
+        self.assertNotIn('>San Pedro Sula</option>', body)
+
+    def test_stores_render_under_their_group(self):
+        body = self._body()
+        for name in ("El Centavo", "Bodega San Juan", "Surtidora Sampedrana"):
+            self.assertIn(f">{name}</option>", body)
+
+    def test_grouped_field_cleans_to_store_instance(self):
+        from campaigns.dynamic_forms import GroupedModelChoiceField
+        field = GroupedModelChoiceField(
+            queryset=Store.objects.filter(campaigns=self.campaign, is_active=True),
+        )
+        self.assertEqual(field.clean(str(self.sps1.pk)), self.sps1)
+
+    def test_ungrouped_stores_render_flat_without_optgroup(self):
+        campaign = _futboleros_campaign("ftb-flat")
+        campaign.stores.clear()
+        flat = Store.objects.create(name="Tienda Plana", order=0)  # no group
+        flat.campaigns.add(campaign)
+        body = self.client.get(
+            reverse("submission_form", args=[campaign.slug]),
+            HTTP_HOST="localhost",
+        ).content.decode()
+        self.assertIn(">Tienda Plana</option>", body)
+        self.assertNotIn("<optgroup", body)

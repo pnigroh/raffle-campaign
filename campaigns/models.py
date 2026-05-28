@@ -172,6 +172,11 @@ class Prize(models.Model):
 
 class Store(models.Model):
     name = models.CharField(max_length=200, unique=True)
+    group = models.CharField(
+        max_length=120, blank=True, default="",
+        help_text="Optional heading the store is grouped under in the dropdown "
+                  "(e.g. a city). Stores with no group render as a flat list.",
+    )
     is_active = models.BooleanField(
         default=True,
         help_text="Inactive stores are hidden from the public submission form."

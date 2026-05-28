@@ -6,14 +6,52 @@ Public API:
 """
 
 import logging
+from collections import OrderedDict
 
 from django import forms
+from django.forms.models import ModelChoiceIterator
 from django.utils import timezone
 
 from .forms import US_STATES  # the 51-state list
 from .models import Store, Submission, SubmissionAttachment, SubmissionCode
 
 logger = logging.getLogger(__name__)
+
+
+class _GroupedModelChoiceIterator(ModelChoiceIterator):
+    """Yields choices grouped into <optgroup>s by an attribute on each object.
+
+    Objects whose group attr is empty are yielded as flat options, so a
+    queryset with no groups renders exactly like a plain ModelChoiceField.
+    """
+
+    def __iter__(self):
+        if self.field.empty_label is not None:
+            yield ("", self.field.empty_label)
+        group_attr = self.field.group_by
+        groups = OrderedDict()
+        for obj in self.queryset:
+            label = getattr(obj, group_attr, "") or ""
+            groups.setdefault(label, []).append(self.choice(obj))
+        for label, choices in groups.items():
+            if label:
+                yield (label, choices)
+            else:
+                yield from choices
+
+
+class GroupedModelChoiceField(forms.ModelChoiceField):
+    """ModelChoiceField that renders <optgroup>s grouped by `group_by`.
+
+    The group headings are not selectable (standard <optgroup> behavior);
+    cleaning still returns the chosen model instance.
+    """
+
+    iterator = _GroupedModelChoiceIterator
+
+    def __init__(self, *args, group_by="group", **kwargs):
+        self.group_by = group_by
+        super().__init__(*args, **kwargs)
 
 
 def _default_schema():
@@ -125,7 +163,7 @@ def _builtin_field(entry, campaign):
             choices[0] = ("", f"-- Select {label} --")
         return forms.ChoiceField(choices=choices, required=required, label=label)
     if key == "store":
-        return forms.ModelChoiceField(
+        return GroupedModelChoiceField(
             queryset=Store.objects.filter(campaigns=campaign, is_active=True),
             required=required,
             empty_label=entry.get("placeholder") or f"-- Select {label} --",

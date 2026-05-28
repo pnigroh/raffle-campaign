@@ -288,11 +288,11 @@ class SubmissionCodeAdmin(CampaignScopedAdminMixin, ModelAdmin):
 
 @admin.register(Store)
 class StoreAdmin(ModelAdmin):
-    list_display = ['name', 'is_active', 'order', 'submission_count']
-    list_editable = ['is_active', 'order']
-    list_filter = ['is_active']
-    search_fields = ['name']
-    ordering = ['order', 'name']
+    list_display = ['name', 'group', 'is_active', 'order', 'submission_count']
+    list_editable = ['group', 'is_active', 'order']
+    list_filter = ['is_active', 'group']
+    search_fields = ['name', 'group']
+    ordering = ['group', 'order', 'name']
     filter_horizontal = ('campaigns',)
 
     def submission_count(self, obj):
