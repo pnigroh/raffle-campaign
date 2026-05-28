@@ -53,3 +53,14 @@ class TriviaQuestionModelTests(TestCase):
         )
         with self.assertRaises(ValidationError):
             q.full_clean()
+
+
+from django.contrib.auth.models import Group, Permission
+
+
+class CampaignManagersGroupTriviaPermsTests(TestCase):
+    def test_group_has_full_crud_on_trivia_question(self):
+        grp = Group.objects.get(name="Campaign Managers")
+        codes = set(grp.permissions.values_list("codename", flat=True))
+        for action in ("view", "add", "change", "delete"):
+            self.assertIn(f"{action}_triviaquestion", codes)

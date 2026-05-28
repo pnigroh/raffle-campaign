@@ -40,6 +40,11 @@ EXPECTED_PERMS = {
     # not add new domains or delete existing ones (superuser-only operations).
     ("campaigns", "view_domain"),
     ("campaigns", "change_domain"),
+    # On TriviaQuestion: full CRUD so managers can author and maintain questions.
+    ("campaigns", "add_triviaquestion"),
+    ("campaigns", "view_triviaquestion"),
+    ("campaigns", "change_triviaquestion"),
+    ("campaigns", "delete_triviaquestion"),
 }
 
 
