@@ -60,6 +60,18 @@ class SchemaValidatorTopLevelTests(SimpleTestCase):
             any("first_name" in e["message"] and "required" in e["message"] for e in errs)
         )
 
+    def test_email_may_be_optional(self):
+        # email must be present, but unlike first/last name it can be optional.
+        errs = validate_form_schema({
+            "version": 1,
+            "fields": [
+                {"kind": "builtin", "key": "first_name", "required": True, "label": "F"},
+                {"kind": "builtin", "key": "last_name", "required": True, "label": "L"},
+                {"kind": "builtin", "key": "email", "required": False, "label": "E"},
+            ],
+        })
+        self.assertEqual(errs, [])
+
     def test_minimal_valid_schema(self):
         errs = validate_form_schema({
             "version": 1,

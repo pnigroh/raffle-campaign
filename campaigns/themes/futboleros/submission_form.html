@@ -165,14 +165,16 @@
       {% endif %}
 
       /* Desktop: NUBE BLANCA cloud wordmark lives at top-RIGHT on every step,
-         matching the AI source's upper-right brand mark on slides 30-37. */
+         matching the AI source's upper-right brand mark on slides 30-37.
+         (~50% larger than the previous 180px / 14vw.) */
       .nube-blanca-logo {
         position: fixed;
         top: clamp(20px, 4vh, 60px);
         right: clamp(20px, 3vw, 72px);
         width: auto;
-        max-width: min(14vw, 180px);
+        max-width: min(21vw, 270px);
         height: auto;
+        margin: 0;
         z-index: 50;
         filter: drop-shadow(0 4px 10px rgba(0,0,0,.22));
       }
@@ -239,13 +241,13 @@
     }
     {% endif %}
 
-    /* Mobile: NUBE BLANCA cloud wordmark — small, top-right corner on every step. */
+    /* Mobile: NUBE BLANCA cloud wordmark — large + centered at the top on every
+       step (matches the design's hero placement). */
     .nube-blanca-logo {
-      position: fixed;
-      top: clamp(12px, 2.5vh, 28px);
-      right: clamp(12px, 3vw, 24px);
-      width: clamp(64px, 18vw, 96px);
+      display: block;
+      width: clamp(170px, 52vw, 250px);
       height: auto;
+      margin: 2% auto 0;
       z-index: 50;
       filter: drop-shadow(0 3px 8px rgba(0,0,0,.22));
     }
@@ -630,13 +632,13 @@
     </div>
   {% else %}
 
+  <!-- NUBE BLANCA cloud wordmark: top-center & large on mobile (all steps), top-right on desktop -->
+  <img class="nube-blanca-logo" src="{% theme_static 'landing/logo_nube_blanca.png' %}"
+       alt="Nube Blanca">
+
   <!-- Brand logo (the "La Nube..." titular): single element, controlled by CSS per viewport + step -->
   <img class="brand-logo" src="{% theme_static 'landing/logo_nube.png' %}"
        alt="La Nube que te mueve... y te lleva al gol">
-
-  <!-- NUBE BLANCA cloud wordmark: always visible top-right; matches the AI source's brand mark -->
-  <img class="nube-blanca-logo" src="{% theme_static 'landing/logo_nube_blanca.png' %}"
-       alt="Nube Blanca">
 
   <!-- Step 1: Welcome -->
   <section class="step is-active welcome" data-step="welcome">

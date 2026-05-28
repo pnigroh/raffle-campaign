@@ -21,7 +21,7 @@ FORM_SCHEMA = {
         {"kind": "builtin", "key": "first_name", "required": True, "label": "Nombre"},
         {"kind": "builtin", "key": "last_name",  "required": True, "label": "Apellidos"},
         {"kind": "builtin", "key": "phone",      "required": True, "label": "Teléfono"},
-        {"kind": "builtin", "key": "email",      "required": True, "label": "Correo electrónico"},
+        {"kind": "builtin", "key": "email",      "required": False, "label": "Correo electrónico"},
         {"kind": "builtin", "key": "store",      "required": True, "label": "Lugar donde compraste el producto", "placeholder": "Selecciona una opción"},
         {"kind": "builtin", "key": "image_1",    "required": True, "label": "Suba aquí una foto de tu factura de compra"},
     ],

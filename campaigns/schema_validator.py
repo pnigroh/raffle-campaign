@@ -8,7 +8,11 @@ ALLOWED_BUILTIN_KEYS = {
     "first_name", "last_name", "email", "phone",
     "state", "county", "store", "image_1", "image_2",
 }
-IRREDUCIBLE_REQUIRED = ("first_name", "last_name", "email")
+# Builtins that must always be present in a schema (so submissions + exports
+# always have these columns). first_name/last_name must also be required=true;
+# email must be present but may be optional.
+IRREDUCIBLE_PRESENT = ("first_name", "last_name", "email")
+IRREDUCIBLE_REQUIRED = ("first_name", "last_name")
 ALLOWED_CUSTOM_TYPES = {"text", "textarea", "select", "checkbox", "file"}
 RESERVED_KEYS = {"csrfmiddlewaretoken", "submission_code_input", "submission_code_obj"}
 
@@ -68,22 +72,22 @@ def validate_form_schema(schema):
             errors.append({"path": f"{path}.kind",
                            "message": "kind must be 'builtin' or 'custom'"})
 
-    for required_key in IRREDUCIBLE_REQUIRED:
+    for key in IRREDUCIBLE_PRESENT:
         matching = [
             f for f in fields
             if isinstance(f, dict)
             and f.get("kind") == "builtin"
-            and f.get("key") == required_key
+            and f.get("key") == key
         ]
         if not matching:
             errors.append({
                 "path": "fields",
-                "message": f"'{required_key}' builtin must be present",
+                "message": f"'{key}' builtin must be present",
             })
-        elif not matching[0].get("required"):
+        elif key in IRREDUCIBLE_REQUIRED and not matching[0].get("required"):
             errors.append({
                 "path": f"fields[{fields.index(matching[0])}]",
-                "message": f"'{required_key}' builtin must have required=true",
+                "message": f"'{key}' builtin must have required=true",
             })
 
     return errors
