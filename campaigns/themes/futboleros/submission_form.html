@@ -637,6 +637,130 @@
       animation: spin .8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* === Reglamento: small link pinned at the bottom on every step === */
+    .reglamento-link-wrap {
+      position: fixed;
+      left: 0; right: 0;
+      bottom: max(env(safe-area-inset-bottom, 0px), 8px);
+      display: flex;
+      justify-content: center;
+      z-index: 60;
+      pointer-events: none;
+    }
+    .reglamento-link {
+      pointer-events: auto;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .02em;
+      color: #fff;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      background: rgba(0,0,0,.4);
+      border: none;
+      border-radius: 999px;
+      padding: 5px 14px 6px;
+      cursor: pointer;
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      transition: background .15s;
+    }
+    .reglamento-link:hover { background: rgba(0,0,0,.58); }
+
+    /* === Reglamento modal (manually triggered popup) === */
+    .reglamento-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(0,0,0,.6);
+    }
+    .reglamento-modal.is-open { display: flex; }
+    .reglamento-dialog {
+      background: #fff;
+      color: var(--ink);
+      border-radius: 18px;
+      width: 100%;
+      max-width: 560px;
+      max-height: 86vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0,0,0,.42);
+    }
+    .reglamento-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 15px 20px;
+      border-bottom: 1px solid #eee;
+      flex-shrink: 0;
+    }
+    .reglamento-head h2 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: .02em;
+      color: var(--red);
+    }
+    .reglamento-close {
+      flex-shrink: 0;
+      width: 32px; height: 32px;
+      border: none;
+      border-radius: 50%;
+      background: #f0f0f0;
+      color: var(--ink);
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .reglamento-close:hover { background: #e3e3e3; }
+    .reglamento-body {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 18px 20px 24px;
+    }
+    .reglamento-body .reglamento-title {
+      text-align: center;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--red);
+      margin: 0 0 4px;
+    }
+    .reglamento-body .reglamento-subtitle {
+      text-align: center;
+      font-size: 13.5px;
+      font-weight: 700;
+      margin: 0 0 14px;
+    }
+    .reglamento-body h3 {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--ink);
+      margin: 18px 0 6px;
+    }
+    .reglamento-body p {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--ink-soft);
+      margin: 0 0 10px;
+    }
+    .reglamento-body ul {
+      margin: 0 0 10px;
+      padding-left: 20px;
+    }
+    .reglamento-body ul ul { margin: 4px 0 0; }
+    .reglamento-body li {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--ink-soft);
+      margin-bottom: 4px;
+    }
   </style>
 </head>
 <body>
@@ -762,6 +886,145 @@
     </div>
   </section>
 
+  <!-- Reglamento: small link pinned at the bottom, visible on every step -->
+  <div class="reglamento-link-wrap">
+    <button type="button" class="reglamento-link" id="reglamentoOpen">ver reglamento</button>
+  </div>
+
+  <!-- Reglamento modal (manually triggered popup) -->
+  <div class="reglamento-modal" id="reglamentoModal" role="dialog" aria-modal="true" aria-labelledby="reglamentoTitle">
+    <div class="reglamento-dialog">
+      <div class="reglamento-head">
+        <h2 id="reglamentoTitle">Reglamento Oficial</h2>
+        <button type="button" class="reglamento-close" id="reglamentoClose" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="reglamento-body">
+        <p class="reglamento-title">REGLAMENTO OFICIAL DE LA PROMOCIÓN</p>
+        <p class="reglamento-subtitle">“ANOTA UN GOL CON NUBE BLANCA Y ROSAL”</p>
+
+        <p>La promoción denominada “La Nube que te mueve y te lleva al Gol” es organizada por ____GRANDBAY PAPELERA INTERNACIONAL________, en adelante “EL ORGANIZADOR”, y se regirá bajo las siguientes bases y condiciones para los territorios de Guatemala y Honduras.</p>
+        <p>La campaña promocional tiene como objetivo incentivar la compra de productos participantes mediante una dinámica digital inspirada en la temporada mundialista.</p>
+
+        <h3>1. VIGENCIA</h3>
+        <p>La promoción será válida desde el _29__ de __MAYO__ de 2026 hasta el _12__ de _JULIO_ de 2026 inclusive.</p>
+        <p>El sorteo final se realizará el día _17__ de ___JULIO____ de 2026.</p>
+
+        <h3>2. TERRITORIO</h3>
+        <p>La promoción será válida únicamente en:</p>
+        <ul>
+          <li>República de Guatemala</li>
+          <li>República de Honduras</li>
+        </ul>
+
+        <h3>3. PARTICIPANTES</h3>
+        <p>Podrán participar todas las personas individuales mayores de 18 años, residentes legales en Guatemala u Honduras, que cumplan con la mecánica de participación descrita en el presente reglamento.</p>
+        <p>No podrán participar:</p>
+        <ul>
+          <li>Colaboradores de EL ORGANIZADOR.</li>
+          <li>Personal de agencias de publicidad, proveedores o empresas relacionadas con la promoción.</li>
+          <li>Familiares directos hasta segundo grado de consanguinidad o afinidad de las personas antes indicadas.</li>
+        </ul>
+
+        <h3>4. PRODUCTOS PARTICIPANTES</h3>
+        <p>Participan los productos de las marcas:</p>
+        <ul>
+          <li>Nube Blanca</li>
+          <li>Rosal</li>
+        </ul>
+        <p>Incluyendo las presentaciones participantes identificadas con material promocional en puntos de venta.</p>
+
+        <h3>5. MECÁNICA DE PARTICIPACIÓN</h3>
+        <p>Para participar, el consumidor deberá:</p>
+        <ul>
+          <li>Comprar productos participantes de Nube Blanca o Rosal.</li>
+          <li>Escanear el código QR disponible en material promocional o ingresar al sitio web oficial indicado por EL ORGANIZADOR.</li>
+          <li>Completar correctamente el formulario de registro con los siguientes datos:
+            <ul>
+              <li>Nombre completo</li>
+              <li>Documento de identificación</li>
+              <li>Teléfono</li>
+              <li>Correo electrónico</li>
+            </ul>
+          </li>
+          <li>Guardar la factura original de compra como respaldo.</li>
+        </ul>
+        <p>La comunicación promocional establece que mientras más compras realice el consumidor, más oportunidades tendrá de ganar.</p>
+        <p>Cada factura registrada equivale a una participación, salvo indicación distinta en materiales promocionales.</p>
+
+        <h3>6. PREMIOS</h3>
+        <p>Se sortearán los siguientes premios:</p>
+        <ul>
+          <li>12 Motocicletas modelo 2026. Divididas de la siguiente manera: 8 Motocicletas modelo 2026 en Guatemala y 4 Motocicletas modelo 2026 en Honduras.</li>
+        </ul>
+        <p>Los premios:</p>
+        <ul>
+          <li>Son personales e intransferibles.</li>
+          <li>No podrán ser canjeados por dinero en efectivo.</li>
+          <li>No incluyen gastos adicionales no especificados por EL ORGANIZADOR.</li>
+          <li>Están sujetos a disponibilidad.</li>
+          <li>Las imágenes utilizadas en publicidad son únicamente ilustrativas.</li>
+        </ul>
+
+        <h3>7. SELECCIÓN DE GANADORES</h3>
+        <p>Los ganadores serán seleccionados mediante sorteo aleatorio electrónico entre todas las participaciones válidas registradas durante la vigencia de la promoción.</p>
+        <p>EL ORGANIZADOR podrá seleccionar ganadores suplentes para casos de:</p>
+        <ul>
+          <li>Imposibilidad de contacto.</li>
+          <li>Incumplimiento del reglamento.</li>
+          <li>Rechazo o abandono del premio.</li>
+        </ul>
+
+        <h3>8. NOTIFICACIÓN DE GANADORES</h3>
+        <p>Los ganadores serán contactados vía:</p>
+        <ul>
+          <li>Teléfono</li>
+          <li>Correo electrónico</li>
+          <li>Redes sociales oficiales (si aplica)</li>
+        </ul>
+        <p>El contacto se realizará dentro de los _0_ días hábiles posteriores al sorteo.</p>
+        <p>Si el ganador no responde en un plazo de _1_ días hábiles posteriores al primer contacto, perderá automáticamente el derecho al premio.</p>
+
+        <h3>9. ENTREGA DE PREMIOS</h3>
+        <p>Para reclamar el premio, el ganador deberá:</p>
+        <ul>
+          <li>Presentar documento de identificación vigente.</li>
+          <li>Presentar factura original de compra si es requerida.</li>
+          <li>Firmar acta de entrega y aceptación del premio.</li>
+        </ul>
+        <p>La entrega de premios se realizará en el lugar y fecha indicados por EL ORGANIZADOR.</p>
+
+        <h3>10. RESPONSABILIDAD</h3>
+        <p>EL ORGANIZADOR no será responsable por:</p>
+        <ul>
+          <li>Problemas técnicos de internet, plataformas digitales o dispositivos móviles.</li>
+          <li>Información incorrecta proporcionada por los participantes.</li>
+          <li>Daños o perjuicios derivados del uso de los premios.</li>
+          <li>Gastos adicionales relacionados con el retiro o utilización del premio.</li>
+        </ul>
+
+        <h3>11. PROTECCIÓN DE DATOS PERSONALES</h3>
+        <p>Los participantes autorizan a EL ORGANIZADOR a recopilar y utilizar sus datos personales exclusivamente para fines relacionados con esta promoción, actividades de contacto, validación de participación y entrega de premios.</p>
+        <p>Los datos serán tratados conforme a la legislación aplicable en Guatemala y Honduras.</p>
+
+        <h3>12. AUTORIZACIÓN DE USO DE IMAGEN</h3>
+        <p>Los ganadores autorizan a EL ORGANIZADOR a utilizar su nombre, voz, imagen y fotografías para fines publicitarios relacionados con esta promoción, sin compensación adicional.</p>
+
+        <h3>13. MODIFICACIONES Y CANCELACIÓN</h3>
+        <p>EL ORGANIZADOR se reserva el derecho de modificar, suspender o cancelar la promoción por causas de fuerza mayor, caso fortuito o circunstancias fuera de su control, notificándolo mediante medios oficiales.</p>
+
+        <h3>14. ACEPTACIÓN DEL REGLAMENTO</h3>
+        <p>La participación en esta promoción implica la aceptación total del presente reglamento y de las decisiones que adopte EL ORGANIZADOR.</p>
+
+        <h3>15. CONSULTAS</h3>
+        <p>Para consultas relacionadas con la promoción, los consumidores podrán comunicarse a:</p>
+        <ul>
+          <li>Guatemala — Tel: +502 5413-4130 — Correo: catherine.soto@lupaci.com</li>
+          <li>Honduras — Tel: +502 5413-4130 — Correo: catherine.soto@lupaci.com</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
   {% endif %}
 </div>
 
@@ -795,6 +1058,28 @@
         window.location.href = window.location.pathname;
       });
     });
+
+    // ---------- Reglamento modal ----------
+    const regOpen = document.getElementById('reglamentoOpen');
+    const regModal = document.getElementById('reglamentoModal');
+    const regClose = document.getElementById('reglamentoClose');
+    if (regOpen && regModal) {
+      const openReg = () => {
+        regModal.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+      };
+      const closeReg = () => {
+        regModal.classList.remove('is-open');
+        document.body.style.overflow = '';
+      };
+      regOpen.addEventListener('click', openReg);
+      if (regClose) regClose.addEventListener('click', closeReg);
+      // Click on the dark backdrop (but not the dialog) closes
+      regModal.addEventListener('click', (e) => { if (e.target === regModal) closeReg(); });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && regModal.classList.contains('is-open')) closeReg();
+      });
+    }
 
     // ---------- Form ----------
     const form = document.getElementById('entryForm');
