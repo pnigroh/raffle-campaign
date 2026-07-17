@@ -158,7 +158,10 @@
       }
       return d;
     }
-    function seedHtml(seed) { return 'Semilla: <b>' + seed + '</b>'; }
+    function seedsHtml(seeds) {
+      var label = seeds.length > 1 ? 'Semillas' : 'Semilla';
+      return label + ': <b>' + seeds.join('</b> · <b>') + '</b>';
+    }
 
     // ---------- Step 1 ----------
     function renderStep1() {
@@ -182,7 +185,7 @@
       var a = DATA[state.i];
       card.appendChild(dots(2));
       card.appendChild(h('div', 'kicker', a.store_name));
-      card.appendChild(h('div', 'seed', seedHtml(a.primary.seed)));
+      card.appendChild(h('div', 'seed', seedsHtml(a.seeds)));
       var slot = h('div', 'slot cycling', '&nbsp;');
       card.appendChild(slot);
       var winnersBox = h('div');
@@ -191,33 +194,23 @@
       btn.onclick = function () { state.step = 3; renderStep3(); };
       card.appendChild(btn);
 
-      var primaries = a.primary.winners.map(function (w) { return { name: w.name, sub: false }; });
-      var subs = (a.substitute ? a.substitute.winners : []).map(function (w) { return { name: w.name, sub: true }; });
-      var queue = primaries.concat(subs);
+      var queue = a.winners.map(function (w) { return { name: w.name }; });
 
-      function placeWinner(item, withDivider) {
-        if (withDivider) {
-          var dv = h('div', 'divider', '— Suplentes —');
-          winnersBox.appendChild(dv);
-          requestAnimationFrame(function () { dv.classList.add('show'); });
-        }
-        var row = h('div', 'winner-row' + (item.sub ? ' sub' : ''),
-          '<span class="medal">' + (item.sub ? '🥈' : '🏆') + '</span><span>' + item.name + '</span>');
+      function placeWinner(item) {
+        var row = h('div', 'winner-row',
+          '<span class="medal">🏆</span><span>' + item.name + '</span>');
         winnersBox.appendChild(row);
         requestAnimationFrame(function () { row.classList.add('show'); });
       }
 
-      var idx = 0, firstSub = true;
+      var idx = 0;
       function landNext() {
         if (idx >= queue.length) {
           slot.style.display = 'none';
           btn.hidden = false;
           return;
         }
-        var item = queue[idx];
-        var withDiv = item.sub && firstSub;
-        if (item.sub) firstSub = false;
-        placeWinner(item, withDiv);
+        placeWinner(queue[idx]);
         idx++;
         setTimeout(landNext, REDUCED ? 250 : 700);
       }
@@ -249,8 +242,7 @@
       status.appendChild(h('div', 'spinner'));
       status.appendChild(h('div', 'verify-line', 'Verificando el sorteo…'));
 
-      var ids = [a.primary.raffle_id];
-      if (a.substitute) ids.push(a.substitute.raffle_id);
+      var ids = a.raffle_ids.slice();
 
       Promise.all(ids.map(function (id) {
         return fetch('/dashboard/raffle/' + id + '/verify/json/', {
@@ -261,7 +253,7 @@
         status.innerHTML = '';
         var allOk = results.length > 0 && results.every(function (r) { return r.status === 'ok'; });
         results.forEach(function (r, k) {
-          var label = (k === 0 ? 'Titular' : 'Suplente');
+          var label = results.length > 1 ? ('Sorteo ' + (k + 1)) : 'Sorteo';
           var ok = r.status === 'ok';
           var line = h('div', 'verify-line',
             '<span>' + label + '</span> ' +
@@ -269,7 +261,7 @@
           status.appendChild(line);
           if (!ok && r.reason) status.appendChild(h('div', 'algo', r.reason));
         });
-        status.appendChild(h('div', 'seed', seedHtml(a.primary.seed)));
+        status.appendChild(h('div', 'seed', seedsHtml(a.seeds)));
         status.appendChild(h('div', 'algo', results[0] && results[0].algorithm
           ? results[0].algorithm + ' v' + results[0].algorithm_version : ''));
 
@@ -297,11 +289,8 @@
       DATA.forEach(function (a) {
         var box = h('div', 'summary-store');
         box.appendChild(h('h3', null, a.store_name));
-        a.primary.winners.forEach(function (w) {
+        a.winners.forEach(function (w) {
           box.appendChild(h('div', 'w', '🏆 ' + w.name));
-        });
-        (a.substitute ? a.substitute.winners : []).forEach(function (w) {
-          box.appendChild(h('div', 's', '🥈 ' + w.name + ' (suplente)'));
         });
         card.appendChild(box);
       });
