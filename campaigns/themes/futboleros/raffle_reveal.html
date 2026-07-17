@@ -1,0 +1,318 @@
+{% load theme_tags %}<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0e6dc2">
+  <title>{{ campaign.name }} — Sorteo</title>
+  <style>
+    @font-face {
+      font-family: 'Andreas';
+      src: url("{% theme_static 'fonts/Andreas.ttf' %}") format('truetype');
+      font-weight: normal; font-style: normal; font-display: swap;
+    }
+    :root {
+      --red: #e30613; --red-dark: #b00510; --red-shadow: rgba(176,5,16,.35);
+      --blue: #0e6dc2; --ink: #1a1a1a; --ink-soft: #4b4b4b;
+      --card-bg: #ffffff; --card-radius: 26px; --pill-radius: 999px;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0; min-height: 100%;
+      font-family: 'Gotham', 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      color: var(--ink); -webkit-font-smoothing: antialiased;
+    }
+    body {
+      min-height: 100dvh; background: var(--blue);
+      background-image: url("{% theme_static 'landing/bg_mobile_steps.png' %}");
+      background-position: center top; background-size: cover;
+      background-repeat: no-repeat; overflow-x: hidden;
+      display: flex; align-items: center; justify-content: center;
+      padding: clamp(16px, 4vw, 40px);
+    }
+    @media (min-width: 768px) {
+      body {
+        background: var(--blue) url("{% theme_static 'landing/bg_desktop.png' %}") center center / cover no-repeat fixed;
+      }
+    }
+    .reveal-card {
+      position: relative; width: 100%; max-width: 560px;
+      background: var(--card-bg); border-radius: var(--card-radius);
+      box-shadow: 0 24px 60px rgba(0,0,0,.35);
+      padding: clamp(24px, 5vw, 44px); text-align: center;
+      min-height: 60dvh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 18px;
+    }
+    .logo { width: clamp(150px, 45%, 240px); height: auto; margin-bottom: 6px; }
+    .display { font-family: 'Andreas', sans-serif; line-height: 1.02; }
+    .store-name { font-size: clamp(34px, 9vw, 58px); color: var(--blue); margin: 4px 0; }
+    .kicker { text-transform: uppercase; letter-spacing: .14em; font-size: 13px; font-weight: 700; color: var(--red); }
+    .count-big { font-family: 'Andreas', sans-serif; font-size: clamp(48px, 14vw, 84px); color: var(--ink); line-height: 1; }
+    .count-label { color: var(--ink-soft); font-size: 15px; }
+    .seed {
+      font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+      background: #f1f1f1; border: 1px dashed #cfcfcf; color: #333;
+      padding: 8px 14px; border-radius: 10px; font-size: 14px; word-break: break-all;
+      display: inline-block; margin: 2px auto;
+    }
+    .seed b { color: var(--red); }
+    .slot {
+      font-family: 'Andreas', sans-serif; font-size: clamp(30px, 8vw, 50px);
+      color: var(--blue); min-height: 1.2em; letter-spacing: .01em;
+    }
+    .slot.cycling { color: var(--ink-soft); opacity: .85; }
+    .winner-row {
+      display: flex; align-items: center; gap: 12px; justify-content: center;
+      font-size: clamp(19px, 5vw, 26px); font-weight: 700; color: var(--ink);
+      opacity: 0; transform: translateY(8px); transition: opacity .5s ease, transform .5s ease;
+      margin: 3px 0;
+    }
+    .winner-row.show { opacity: 1; transform: none; }
+    .winner-row .medal { font-size: 1.3em; }
+    .winner-row.sub { font-size: clamp(16px, 4.4vw, 21px); font-weight: 600; color: var(--ink-soft); }
+    .divider { text-transform: uppercase; letter-spacing: .16em; font-size: 12px; font-weight: 700;
+      color: var(--red); margin: 10px 0 2px; opacity: 0; transition: opacity .4s ease; }
+    .divider.show { opacity: 1; }
+    .btn {
+      appearance: none; border: none; cursor: pointer; font: inherit; font-weight: 800;
+      text-transform: uppercase; letter-spacing: .04em; color: #fff;
+      background: var(--red); border-radius: var(--pill-radius);
+      padding: 14px 34px; font-size: 16px; box-shadow: 0 10px 22px var(--red-shadow);
+      transition: transform .12s ease, background .2s ease; margin-top: 8px;
+    }
+    .btn:hover { background: var(--red-dark); }
+    .btn:active { transform: translateY(1px) scale(.99); }
+    .btn[hidden] { display: none; }
+    .verify-line { display: flex; align-items: center; gap: 10px; justify-content: center;
+      font-size: 15px; color: var(--ink-soft); margin: 4px 0; }
+    .verify-line .ok { color: #1a9c4b; font-weight: 800; }
+    .verify-line .bad { color: var(--red); font-weight: 800; }
+    .spinner {
+      width: 34px; height: 34px; border: 4px solid #e3e3e3; border-top-color: var(--red);
+      border-radius: 50%; animation: spin .8s linear infinite; margin: 6px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .confirmed {
+      font-family: 'Andreas', sans-serif; font-size: clamp(24px, 6.5vw, 40px);
+      color: #1a9c4b; line-height: 1.05; margin-top: 10px;
+      opacity: 0; transform: scale(.9); transition: opacity .5s ease, transform .5s ease;
+    }
+    .confirmed.show { opacity: 1; transform: none; }
+    .algo { font-size: 12px; color: #9a9a9a; margin-top: 6px; }
+    .progress-dots { display: flex; gap: 8px; justify-content: center; margin-bottom: 4px; }
+    .progress-dots i { width: 9px; height: 9px; border-radius: 50%; background: #d8d8d8; display: block; }
+    .progress-dots i.active { background: var(--red); }
+    .progress-dots i.done { background: var(--blue); }
+    .summary-store { border-top: 1px solid #eee; padding: 12px 0; }
+    .summary-store:first-child { border-top: none; }
+    .summary-store h3 { font-family: 'Andreas', sans-serif; color: var(--blue); margin: 0 0 6px; font-size: 26px; }
+    .summary-store .w { font-weight: 700; }
+    .summary-store .s { color: var(--ink-soft); font-size: 14px; }
+    .empty { color: var(--ink-soft); font-size: 18px; }
+    @media (prefers-reduced-motion: reduce) {
+      .winner-row, .divider, .confirmed { transition: none; }
+      .spinner { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="reveal-card" id="card">
+    {% if acts %}
+      <p class="empty" style="display:none">iniciando…</p>
+    {% else %}
+      <img class="logo" src="{% theme_static 'landing/logo_nube_blanca.png' %}" alt="Nube Blanca">
+      <p class="empty">No hay sorteos para presentar todavía.</p>
+    {% endif %}
+  </main>
+
+  {% if acts %}{{ acts|json_script:"reveal-data" }}{% endif %}
+
+  <!-- assets referenced so they preload / are present in markup -->
+  <img src="{% theme_static 'landing/logo_nube_blanca.png' %}" alt="" hidden>
+  <span data-confirm-label hidden>GANADORES DEFINITIVOS CONFIRMADOS</span>
+
+  <script>
+  (function () {
+    var el = document.getElementById('reveal-data');
+    if (!el) return;
+    var DATA = JSON.parse(el.textContent);
+    var LOGO = "{% theme_static 'landing/logo_nube_blanca.png' %}";
+    var REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var card = document.getElementById('card');
+    var state = { i: 0, step: 1 };
+
+    function h(tag, cls, html) {
+      var n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (html != null) n.innerHTML = html;
+      return n;
+    }
+    function clear() { card.innerHTML = ''; }
+    function dots(active) {
+      var d = h('div', 'progress-dots');
+      for (var s = 1; s <= 3; s++) {
+        var i = h('i');
+        if (s < active) i.className = 'done';
+        else if (s === active) i.className = 'active';
+        d.appendChild(i);
+      }
+      return d;
+    }
+    function seedHtml(seed) { return 'Semilla: <b>' + seed + '</b>'; }
+
+    // ---------- Step 1 ----------
+    function renderStep1() {
+      clear();
+      var a = DATA[state.i];
+      card.appendChild(dots(1));
+      var logo = h('img', 'logo'); logo.src = LOGO; logo.alt = 'Nube Blanca';
+      card.appendChild(logo);
+      card.appendChild(h('div', 'kicker', 'Tienda ' + (state.i + 1) + ' de ' + DATA.length));
+      card.appendChild(h('div', 'display store-name', a.store_name));
+      card.appendChild(h('div', 'count-big', a.participants));
+      card.appendChild(h('div', 'count-label', 'participantes válidos'));
+      var btn = h('button', 'btn', 'Siguiente');
+      btn.onclick = function () { state.step = 2; renderStep2(); };
+      card.appendChild(btn);
+    }
+
+    // ---------- Step 2 ----------
+    function renderStep2() {
+      clear();
+      var a = DATA[state.i];
+      card.appendChild(dots(2));
+      card.appendChild(h('div', 'kicker', a.store_name));
+      card.appendChild(h('div', 'seed', seedHtml(a.primary.seed)));
+      var slot = h('div', 'slot cycling', '&nbsp;');
+      card.appendChild(slot);
+      var winnersBox = h('div');
+      card.appendChild(winnersBox);
+      var btn = h('button', 'btn', 'Siguiente'); btn.hidden = true;
+      btn.onclick = function () { state.step = 3; renderStep3(); };
+      card.appendChild(btn);
+
+      var primaries = a.primary.winners.map(function (w) { return { name: w.name, sub: false }; });
+      var subs = (a.substitute ? a.substitute.winners : []).map(function (w) { return { name: w.name, sub: true }; });
+      var queue = primaries.concat(subs);
+
+      function placeWinner(item, withDivider) {
+        if (withDivider) {
+          var dv = h('div', 'divider', '— Suplentes —');
+          winnersBox.appendChild(dv);
+          requestAnimationFrame(function () { dv.classList.add('show'); });
+        }
+        var row = h('div', 'winner-row' + (item.sub ? ' sub' : ''),
+          '<span class="medal">' + (item.sub ? '🥈' : '🏆') + '</span><span>' + item.name + '</span>');
+        winnersBox.appendChild(row);
+        requestAnimationFrame(function () { row.classList.add('show'); });
+      }
+
+      var idx = 0, firstSub = true;
+      function landNext() {
+        if (idx >= queue.length) {
+          slot.style.display = 'none';
+          btn.hidden = false;
+          return;
+        }
+        var item = queue[idx];
+        var withDiv = item.sub && firstSub;
+        if (item.sub) firstSub = false;
+        placeWinner(item, withDiv);
+        idx++;
+        setTimeout(landNext, REDUCED ? 250 : 700);
+      }
+
+      if (REDUCED) { slot.style.display = 'none'; landNext(); return; }
+
+      // Slot-machine cycling, decelerating, then land winners one by one.
+      var names = a.sample_names && a.sample_names.length ? a.sample_names : queue.map(function (q) { return q.name; });
+      var start = null, DURATION = 2500, delay = 40;
+      function cycle(ts) {
+        if (start == null) start = ts;
+        var elapsed = ts - start;
+        slot.textContent = names[Math.floor(Math.random() * names.length)];
+        delay = 40 + Math.pow(elapsed / DURATION, 2) * 220;
+        if (elapsed < DURATION) { setTimeout(function () { requestAnimationFrame(cycle); }, delay); }
+        else { slot.classList.remove('cycling'); slot.textContent = '¡Ganadores!'; setTimeout(landNext, 500); }
+      }
+      requestAnimationFrame(cycle);
+    }
+
+    // ---------- Step 3 ----------
+    function renderStep3() {
+      clear();
+      var a = DATA[state.i];
+      card.appendChild(dots(3));
+      card.appendChild(h('div', 'kicker', a.store_name));
+      card.appendChild(h('div', 'display', '<span style="font-size:clamp(22px,6vw,34px);color:var(--blue)">Verificación</span>'));
+      var status = h('div'); card.appendChild(status);
+      status.appendChild(h('div', 'spinner'));
+      status.appendChild(h('div', 'verify-line', 'Verificando el sorteo…'));
+
+      var ids = [a.primary.raffle_id];
+      if (a.substitute) ids.push(a.substitute.raffle_id);
+
+      Promise.all(ids.map(function (id) {
+        return fetch('/dashboard/raffle/' + id + '/verify/json/', {
+          credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        }).then(function (r) { return r.json(); })
+          .catch(function () { return { status: 'error', raffle_id: id }; });
+      })).then(function (results) {
+        status.innerHTML = '';
+        var allOk = results.length > 0 && results.every(function (r) { return r.status === 'ok'; });
+        results.forEach(function (r, k) {
+          var label = (k === 0 ? 'Titular' : 'Suplente');
+          var ok = r.status === 'ok';
+          var line = h('div', 'verify-line',
+            '<span>' + label + '</span> ' +
+            (ok ? '<span class="ok">✔ verificado</span>' : '<span class="bad">✖ ' + (r.status || 'error') + '</span>'));
+          status.appendChild(line);
+          if (!ok && r.reason) status.appendChild(h('div', 'algo', r.reason));
+        });
+        status.appendChild(h('div', 'seed', seedHtml(a.primary.seed)));
+        status.appendChild(h('div', 'algo', results[0] && results[0].algorithm
+          ? results[0].algorithm + ' v' + results[0].algorithm_version : ''));
+
+        if (allOk) {
+          var c = h('div', 'confirmed', 'GANADORES DEFINITIVOS CONFIRMADOS');
+          status.appendChild(c);
+          requestAnimationFrame(function () { c.classList.add('show'); });
+        }
+        var last = state.i >= DATA.length - 1;
+        var btn = h('button', 'btn', last ? 'Ver resumen' : 'Siguiente tienda');
+        btn.onclick = function () {
+          if (last) { renderSummary(); }
+          else { state.i++; state.step = 1; renderStep1(); }
+        };
+        card.appendChild(btn);
+      });
+    }
+
+    // ---------- Summary ----------
+    function renderSummary() {
+      clear();
+      var logo = h('img', 'logo'); logo.src = LOGO; logo.alt = 'Nube Blanca';
+      card.appendChild(logo);
+      card.appendChild(h('div', 'display', '<span style="font-size:clamp(26px,7vw,40px);color:var(--blue)">Resumen del sorteo</span>'));
+      DATA.forEach(function (a) {
+        var box = h('div', 'summary-store');
+        box.appendChild(h('h3', null, a.store_name));
+        a.primary.winners.forEach(function (w) {
+          box.appendChild(h('div', 'w', '🏆 ' + w.name));
+        });
+        (a.substitute ? a.substitute.winners : []).forEach(function (w) {
+          box.appendChild(h('div', 's', '🥈 ' + w.name + ' (suplente)'));
+        });
+        card.appendChild(box);
+      });
+      card.appendChild(h('div', 'confirmed show', 'GANADORES DEFINITIVOS CONFIRMADOS'));
+      var again = h('button', 'btn', 'Reiniciar');
+      again.onclick = function () { state.i = 0; state.step = 1; renderStep1(); };
+      card.appendChild(again);
+    }
+
+    renderStep1();
+  })();
+  </script>
+</body>
+</html>

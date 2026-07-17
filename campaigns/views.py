@@ -70,6 +70,58 @@ def _render_theme_template(request, campaign, template_name, context):
     return HttpResponse(template.render(context, request))
 
 
+def _reveal_acts(campaign):
+    """Group a campaign's raffles into per-store acts for the reveal page.
+
+    Returns a list ordered by primary raffle id. Each act:
+      {'store_name', 'participants', 'primary', 'substitute'|None, 'sample_names'}
+    A raffle is a substitute iff its prize name contains "suplente".
+    """
+    from .models import Store
+
+    def is_substitute(raffle):
+        name = raffle.prize_quantities[0]['prize_name'] if raffle.prize_quantities else ''
+        return 'suplente' in name.lower()
+
+    def winners_of(raffle):
+        return [
+            {'name': w.submission.full_name, 'position': w.position}
+            for w in raffle.winners.select_related('submission').order_by('position')
+        ]
+
+    by_store = {}
+    for raffle in campaign.raffles.all():
+        by_store.setdefault(raffle.filter_store_id, []).append(raffle)
+
+    store_names = dict(Store.objects.values_list('id', 'name'))
+
+    acts = []
+    for store_id, raffles in by_store.items():
+        primary = next((r for r in raffles if not is_substitute(r)), None) or raffles[0]
+        substitute = next(
+            (r for r in raffles if is_substitute(r) and r is not primary), None
+        )
+        sample = list(
+            Submission.objects
+            .filter(id__in=list(primary.participant_pool_snapshot)[:200])
+            .values_list('first_name', flat=True)[:40]
+        )
+        acts.append({
+            'store_name': store_names.get(store_id, f'Tienda #{store_id}'),
+            'participants': primary.total_participants,
+            'primary': {'raffle_id': primary.id, 'seed': primary.seed,
+                        'winners': winners_of(primary)},
+            'substitute': ({'raffle_id': substitute.id, 'seed': substitute.seed,
+                            'winners': winners_of(substitute)} if substitute else None),
+            'sample_names': sample or [w['name'] for w in winners_of(primary)],
+            '_order': primary.id,
+        })
+    acts.sort(key=lambda a: a['_order'])
+    for a in acts:
+        del a['_order']
+    return acts
+
+
 def _pick_trivia_question(campaign):
     """Return one random active TriviaQuestion assigned to this campaign, or None."""
     from .models import TriviaQuestion
@@ -566,6 +618,46 @@ def raffle_audit(request, raffle_id):
         'missing_pool_ids': missing_pool_ids,
         'winners': winners,
         'restored_count': restored_count,
+    })
+
+
+@login_required
+def raffle_reveal(request, campaign_id):
+    """Presentation-mode page that reveals a campaign's raffles store by store."""
+    campaign = _get_managed_campaign_or_403(request.user, campaign_id)
+    return _render_theme_template(request, campaign, "raffle_reveal.html", {
+        'campaign': campaign,
+        'acts': _reveal_acts(campaign),
+    })
+
+
+@login_required
+def raffle_verify_json(request, raffle_id):
+    """Run verify_raffle_audit on demand and return a lean JSON result.
+
+    Consumed by the reveal page's Step 3. Unlike raffle_audit_json this does
+    not force a file download and returns only what the reveal needs.
+    """
+    from .utils import verify_raffle_audit
+    raffle = get_object_or_404(
+        Raffle.objects.select_related('campaign'), id=raffle_id,
+    )
+    if not _user_can_access_campaign(request.user, raffle.campaign):
+        raise PermissionDenied("You don't have access to this raffle.")
+
+    result = verify_raffle_audit(raffle)
+    winners = [
+        {'name': w.submission.full_name, 'position': w.position, 'prize': w.prize.name}
+        for w in raffle.winners.select_related('submission', 'prize').order_by('position')
+    ]
+    return JsonResponse({
+        'raffle_id': raffle.id,
+        'status': result.get('status'),
+        'reason': result.get('diff', {}).get('reason', ''),
+        'seed': raffle.seed,
+        'algorithm': raffle.algorithm,
+        'algorithm_version': raffle.algorithm_version,
+        'winners': winners,
     })
 
 
