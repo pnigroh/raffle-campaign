@@ -30,6 +30,7 @@ urlpatterns = [
     path('dashboard/campaign/<int:campaign_id>/', views.campaign_detail, name='campaign_detail'),
     path('dashboard/campaign/<int:campaign_id>/export/', views.export_campaign_submissions, name='export_submissions'),
     path('dashboard/campaign/<int:campaign_id>/raffle/', views.raffle_view, name='raffle'),
+    path('dashboard/campaign/<int:campaign_id>/reveal/', views.raffle_reveal, name='raffle_reveal'),
     path('dashboard/campaign/<int:campaign_id>/import-codes/', views.import_codes_view, name='import_codes'),
     path('dashboard/campaign/<int:campaign_id>/filter-count/', views.ajax_filter_count, name='ajax_filter_count'),
     path('dashboard/campaign/<int:campaign_id>/submission/<int:submission_id>/validity/', views.submission_set_validity, name='submission_set_validity'),
@@ -42,4 +43,5 @@ urlpatterns = [
     path('dashboard/raffle/<int:raffle_id>/export/', views.export_raffle_winners, name='export_winners'),
     path('dashboard/raffle/<int:raffle_id>/audit/', views.raffle_audit, name='raffle_audit'),
     path('dashboard/raffle/<int:raffle_id>/audit/json/', views.raffle_audit_json, name='raffle_audit_json'),
+    path('dashboard/raffle/<int:raffle_id>/verify/json/', views.raffle_verify_json, name='raffle_verify_json'),
 ]
