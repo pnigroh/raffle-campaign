@@ -73,8 +73,12 @@ def _render_theme_template(request, campaign, template_name, context):
 def _reveal_acts(campaign):
     """Group a campaign's raffles into per-store acts for the reveal page.
 
-    Returns a list ordered by primary raffle id. Each act:
-      {'store_name', 'participants', 'primary', 'substitute'|None, 'sample_names'}
+    Aggregates ALL primary (non-substitute) raffles for a store into one act,
+    concatenating their winners (positions renumbered 1..N). Substitute raffles
+    are excluded from the reveal entirely. Ordered by the store's first primary
+    raffle id. Each act:
+      {'store_name', 'participants', 'winners':[{name,position}],
+       'raffle_ids':[int], 'seeds':[str], 'sample_names':[str]}
     A raffle is a substitute iff its prize name contains "suplente".
     """
     from .models import Store
@@ -83,38 +87,34 @@ def _reveal_acts(campaign):
         name = raffle.prize_quantities[0]['prize_name'] if raffle.prize_quantities else ''
         return 'suplente' in name.lower()
 
-    def winners_of(raffle):
-        return [
-            {'name': w.submission.full_name, 'position': w.position}
-            for w in raffle.winners.select_related('submission').order_by('position')
-        ]
-
     by_store = {}
-    for raffle in campaign.raffles.all():
+    for raffle in campaign.raffles.all().order_by('id'):
         by_store.setdefault(raffle.filter_store_id, []).append(raffle)
 
     store_names = dict(Store.objects.values_list('id', 'name'))
 
     acts = []
     for store_id, raffles in by_store.items():
-        primary = next((r for r in raffles if not is_substitute(r)), None) or raffles[0]
-        substitute = next(
-            (r for r in raffles if is_substitute(r) and r is not primary), None
-        )
+        primaries = [r for r in raffles if not is_substitute(r)] or raffles[:1]
+        first = primaries[0]
+        winners = []
+        for r in primaries:
+            for w in r.winners.select_related('submission').order_by('position'):
+                winners.append({'name': w.submission.full_name,
+                                'position': len(winners) + 1})
         sample = list(
             Submission.objects
-            .filter(id__in=list(primary.participant_pool_snapshot)[:200])
+            .filter(id__in=list(first.participant_pool_snapshot)[:200])
             .values_list('first_name', flat=True)[:40]
         )
         acts.append({
             'store_name': store_names.get(store_id, f'Tienda #{store_id}'),
-            'participants': primary.total_participants,
-            'primary': {'raffle_id': primary.id, 'seed': primary.seed,
-                        'winners': winners_of(primary)},
-            'substitute': ({'raffle_id': substitute.id, 'seed': substitute.seed,
-                            'winners': winners_of(substitute)} if substitute else None),
-            'sample_names': sample or [w['name'] for w in winners_of(primary)],
-            '_order': primary.id,
+            'participants': first.total_participants,
+            'winners': winners,
+            'raffle_ids': [r.id for r in primaries],
+            'seeds': [r.seed for r in primaries],
+            'sample_names': sample or [w['name'] for w in winners],
+            '_order': first.id,
         })
     acts.sort(key=lambda a: a['_order'])
     for a in acts:

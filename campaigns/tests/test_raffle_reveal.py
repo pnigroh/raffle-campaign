@@ -60,6 +60,14 @@ class _RevealFixture:
                                 segment_data={"store_id": sid}, consume_pool=True,
                                 excluded_already_participated=False)
             raffles[store_name] = (r, rs)
+        # Additional primary round (doubling), as done in production: each store
+        # gains a second primary raffle. Winners exclude all prior winners.
+        for store_name, qty in plan:
+            sid = stores[store_name].id
+            pool3 = campaign.submissions.filter(is_valid=True, store_id=sid).exclude(wins__raffle__campaign=campaign)
+            conduct_raffle(campaign, [(primary, qty)], pool3,
+                           segment_data={"store_id": sid}, consume_pool=True,
+                           excluded_already_participated=False)
         return campaign, stores, raffles
 
 
@@ -133,16 +141,29 @@ class RaffleRevealViewTests(_IsolatedThemeMixin, TestCase):
         self.assertIn(primary.seed, body)
         self.assertIn('id="reveal-data"', body)
 
-    def test_acts_ordered_and_shaped(self):
+    def test_acts_aggregate_primaries_and_omit_substitutes(self):
         acts = self._acts()
         self.assertEqual([a["store_name"] for a in acts],
                          ["La Bodegona", "El Gran Gallo", "Oasis"])
         bodegona = acts[0]
-        self.assertEqual(len(bodegona["primary"]["winners"]), 2)
-        self.assertEqual(len(bodegona["substitute"]["winners"]), 2)
+        # Two primary raffles (2 + 2) aggregate to 4 winners, renumbered 1..4.
+        self.assertEqual(len(bodegona["winners"]), 4)
+        self.assertEqual([w["position"] for w in bodegona["winners"]], [1, 2, 3, 4])
+        self.assertEqual(len(bodegona["raffle_ids"]), 2)
+        self.assertEqual(len(bodegona["seeds"]), 2)
+        # Reveal data must not carry any substitute structure.
+        self.assertNotIn("substitute", bodegona)
         self.assertEqual(bodegona["participants"],
                          self.raffles["La Bodegona"][0].total_participants)
         self.assertTrue(bodegona["sample_names"])
+
+    def test_substitute_winners_not_displayed(self):
+        body = self._get().content.decode()
+        for store in ("La Bodegona", "El Gran Gallo", "Oasis"):
+            sub_raffle = self.raffles[store][1]
+            for w in sub_raffle.winners.select_related("submission"):
+                self.assertNotIn(w.submission.full_name, body,
+                                 f"substitute {w.submission.full_name} leaked into reveal")
 
     def test_blocks_non_manager(self):
         other = User.objects.create_user("nobody", "n@e.com", "pw")
