@@ -71,30 +71,55 @@ def _render_theme_template(request, campaign, template_name, context):
 
 
 def _reveal_acts(campaign):
-    """Group a campaign's raffles into per-store acts for the reveal page.
+    """Group a campaign's raffles into acts for the reveal page.
 
-    Aggregates ALL primary (non-substitute) raffles for a store into one act,
-    concatenating their winners (positions renumbered 1..N). Substitute raffles
-    are excluded from the reveal entirely. Ordered by the store's first primary
-    raffle id. Each act:
+    Each act aggregates ALL primary (non-substitute) raffles that share a
+    grouping key, concatenating their winners (positions renumbered 1..N).
+    Substitute raffles are excluded from the reveal entirely. Acts are ordered
+    by the first primary raffle id in each group. Each act:
       {'store_name', 'participants', 'winners':[{name,position}],
        'raffle_ids':[int], 'seeds':[str], 'sample_names':[str]}
     A raffle is a substitute iff its prize name contains "suplente".
+
+    Grouping key, per raffle:
+      - Per-store campaigns (e.g. Guatemala): the raffle carries a
+        ``filter_store_id`` and is grouped/labeled by that store.
+      - Per-city campaigns (e.g. Honduras): the raffle has no store filter, so
+        it is grouped/labeled by the city (``Store.group``) shared by its
+        winners' stores. The 'store_name' key then holds the city name.
     """
+    from collections import Counter
+
     from .models import Store
 
     def is_substitute(raffle):
         name = raffle.prize_quantities[0]['prize_name'] if raffle.prize_quantities else ''
         return 'suplente' in name.lower()
 
-    by_store = {}
-    for raffle in campaign.raffles.all().order_by('id'):
-        by_store.setdefault(raffle.filter_store_id, []).append(raffle)
-
     store_names = dict(Store.objects.values_list('id', 'name'))
 
+    def key_and_label(raffle):
+        if raffle.filter_store_id is not None:
+            return ('store', raffle.filter_store_id), store_names.get(
+                raffle.filter_store_id, f'Tienda #{raffle.filter_store_id}')
+        groups = [
+            w.submission.store.group
+            for w in raffle.winners.select_related('submission__store')
+            if w.submission.store and w.submission.store.group
+        ]
+        if groups:
+            city = Counter(groups).most_common(1)[0][0]
+            return ('city', city), city
+        return ('raffle', raffle.id), (raffle.notes or f'Sorteo #{raffle.id}')
+
+    grouped = {}
+    for raffle in campaign.raffles.all().order_by('id'):
+        key, label = key_and_label(raffle)
+        grouped.setdefault(key, {'label': label, 'raffles': []})['raffles'].append(raffle)
+
     acts = []
-    for store_id, raffles in by_store.items():
+    for data in grouped.values():
+        raffles = data['raffles']
         primaries = [r for r in raffles if not is_substitute(r)] or raffles[:1]
         first = primaries[0]
         winners = []
@@ -108,7 +133,7 @@ def _reveal_acts(campaign):
             .values_list('first_name', flat=True)[:40]
         )
         acts.append({
-            'store_name': store_names.get(store_id, f'Tienda #{store_id}'),
+            'store_name': data['label'],
             'participants': first.total_participants,
             'winners': winners,
             'raffle_ids': [r.id for r in primaries],
