@@ -22,23 +22,51 @@ without it Django rejects the submission with a 403.
 
 ## 2. Reverse proxy + TLS
 
-Add `bimbotepremia.com` and `www.bimbotepremia.com` to the vhost, following the
-same pattern as futbolerosnb.com, and issue a certificate for both names. Keep
-the `/theme-assets/` alias block from `host-setup.md` — this theme leans on it
-(~640 KB of backgrounds, packs and fonts).
+`/etc/nginx/sites-available/bimbotepremia` proxies both hostnames to the app and
+serves `/static/`, `/media/` and `/theme-assets/` directly. It sets
+`client_max_body_size 20m` rather than the 10m used for futbolerosnb: invoice
+photos come straight off phone cameras, and a rejected upload is a lost entry.
 
-Redirect `www` → apex at the proxy. The app resolves campaigns by exact hostname,
-so `www` reaching Django directly would 404: only `bimbotepremia.com` has a
-`Domain` row.
+**The domain sits behind Cloudflare**, which HTTP-01 validation cannot see
+through. To issue the certificate, set both records to DNS-only (grey cloud),
+run:
+
+```bash
+certbot --nginx -d bimbotepremia.com -d www.bimbotepremia.com
+```
+
+then re-enable the proxy. Certbot rewrites the vhost with the TLS listener and
+the port-80 redirect, the same shape futbolerosnb.com already has.
+
+`www` must be redirected to the apex at the proxy. The app resolves campaigns by
+exact hostname, so `www` reaching Django directly 404s — only
+`bimbotepremia.com` has a `Domain` row.
 
 ## 3. Deploy the code and provision
 
+`/opt/raffle` is a plain file copy of the repo, not a git checkout, so the code
+is pushed from a workstation. Sending only git-tracked files keeps local
+secrets and build artefacts off the server:
+
 ```bash
-cd /srv/raffle
-git pull
-docker compose -f docker-compose.prod.yml up -d --build web
+# from a clean checkout of main, on your workstation
+git ls-files -z | rsync -a --files-from=- --from0 \
+    ./ root@159.223.186.130:/opt/raffle/
+```
+
+`.env.prod` is untracked, so it survives the sync untouched.
+
+```bash
+# on the host
+cd /opt/raffle
+docker compose --env-file .env.prod -f docker-compose.lean.yml up -d --build web
+docker exec raffle-prod python manage.py migrate --noinput
 docker exec raffle-prod python manage.py provision_principe
 ```
+
+`--env-file .env.prod` is required: compose interpolates `${POSTGRES_PASSWORD}`
+from `.env` or the shell, not from the `env_file:` a service declares, and
+without it the stack refuses to start.
 
 `provision_principe` is idempotent — safe to re-run. It creates the `Domain`, the
 `Theme` row, copies `campaigns/themes/principe/` into `/app/themes/principe`
@@ -59,6 +87,8 @@ curl -sI https://bimbotepremia.com/theme-assets/principe/img/bg_desktop.jpg    #
 
 A `campaigns.W001` warning means a `Domain` hostname is missing from
 `ALLOWED_HOSTS`. It only surfaces through `manage.py check`, never at startup.
+The standing warning for `promo-domo.example` is the fallback `Domain` row the
+seed migration creates; it carries no campaigns and is safe to ignore.
 
 The apex redirect comes from `campaigns.views.root_redirect`, which resolves only
 when the host has exactly one active campaign. That holds for this domain;
@@ -77,3 +107,11 @@ short links.
 - **Campaign window** is 2026-08-24 → 2026-10-02 23:59. Outside it the form
   renders a closed notice and rejects POSTs. Re-running the command does not
   reset the dates.
+
+## Capacity
+
+The previous campaign produced 2.9 GB of photos from 1228 submissions — roughly
+2.4 MB each, straight off phone cameras. The droplet has a single 24 GB disk
+shared by the database, the media, and three nightly backup snapshots, and it
+has run out of space once before. Watch `df -h /` during the campaign: at the
+same rate, about 6000 entries would fill what is currently free.
