@@ -8,6 +8,9 @@ _HN_SUBMIT = reverse_lazy('submission_form', kwargs={'campaign_slug': 'futbolero
 
 urlpatterns = [
     # Public
+    # Apex: single-campaign domains land on their form; multi-campaign hosts
+    # still 404 here and use the short links below.
+    path('', views.root_redirect, name='root'),
     path('submit/<slug:campaign_slug>/', views.submission_form, name='submission_form'),
     path('submit/<slug:campaign_slug>/success/', views.submission_success, name='submission_success'),
     path('submit/<slug:campaign_slug>/preview/<str:variant>/', views.submission_form_preview, name='submission_form_preview'),

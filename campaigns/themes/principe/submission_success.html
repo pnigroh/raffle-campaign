@@ -93,31 +93,44 @@
     .again:hover { background: #17295c; }
 
     /* Bottom art band -- same two-piece background split as the form page. */
-    .art-wrap { position: relative; margin: 8px -20px 0; }
     .art {
+      position: relative;
+      margin: 8px 0 0;
       background: url("{% theme_static 'img/bg_mobile_art.jpg' %}") center top / 100% 100% no-repeat;
       aspect-ratio: 1000 / 880;
     }
-    .brand-bottom { position: absolute; inset: 0; }
-    .brand-bottom .empaques {
+    .empaques {
       position: absolute; right: 4%; top: 16%; width: 46%; height: auto;
+    }
+
+    /* The Marinela panel is a tab stuck to the top edge of the navy bar at
+       the right, as in the comp -- `bottom: 100%` parks its base on the
+       bar's top edge at every width. */
+    .page-footer {
+      position: relative;
+      z-index: 2;
+      background: var(--navy);
+      padding: 16px 20px;
+    }
+    .footer-text {
+      display: block; width: min(100%, 620px); height: auto; margin: 0 auto;
     }
     .marinela {
       position: absolute;
       right: 6%;
-      bottom: 0;
+      bottom: 100%;
       width: 34%;
       min-width: 150px;
+      max-width: 300px;
       background: var(--navy);
-      border-radius: 30px 30px 0 0;
-      padding: 20px 22px 14px;
+      /* Domed top, as in the comp: measured there, the arch rises 10.6% of
+         the panel's width at the centre. The vertical radius resolves
+         against height, which padding keeps at ~62% of the width -- so 18%
+         of height lands on that same 10.6%. */
+      border-radius: 50% 50% 0 0 / 18% 18% 0 0;
+      padding: 16% 9% 8%;
     }
     .marinela img { width: 100%; height: auto; display: block; }
-
-    .page-footer { background: var(--navy); padding: 16px 20px; }
-    .page-footer img {
-      display: block; width: min(100%, 620px); height: auto; margin: 0 auto;
-    }
 
     @media (min-width: 900px) {
       .page-body {
@@ -135,9 +148,9 @@
         grid-template-columns: 1fr 1fr;
         grid-template-rows: auto auto 1fr;
         grid-template-areas:
-          ".     bimbo"
-          ".     principe"
-          "brand card";
+          ".  bimbo"
+          ".  principe"
+          ".  card";
         column-gap: 40px;
         align-items: start;
       }
@@ -152,27 +165,43 @@
         justify-self: end;
         width: 100%;
         max-width: 470px;
-        margin-top: 24px;
+        /* Clears the Marinela tab, which rises out of the navy bar below. */
+        margin: 24px 0 150px;
       }
 
-      .art-wrap { display: contents; }
-      .art { display: none; }
-      .brand-bottom {
-        grid-area: brand;
-        position: static;
-        align-self: end;
-        display: flex;
-        align-items: flex-end;
-        gap: 28px;
+      /* The bike band is dropped -- the desktop background carries it. The
+         band is only collapsed out of the flex flow rather than hidden,
+         because the packs live inside it. */
+      .art {
+        position: absolute;
+        width: 0;
+        height: 0;
+        margin: 0;
+        background: none;
+        aspect-ratio: auto;
       }
-      .brand-bottom .empaques { position: static; width: 300px; }
-      .marinela {
-        position: static;
-        width: 230px;
-        min-width: 0;
-        border-radius: 30px;
-        padding: 20px 24px;
+
+      /* The desktop background is `fixed`, so the packs are pinned too:
+         anything else slides them over the "GANA 1 DE LAS 30" lockup as the
+         page scrolls.
+
+         The sizing is geometry, not taste. That lockup ends at y 79% of the
+         background; with `cover` its lowest possible landing point is 79% of
+         the viewport height, so 21vh is the least headroom there can ever be
+         below it. The packs are 1000x505, so 34vh wide makes them 17.2vh
+         tall -- that plus the 1.5vh gap always clears the lockup, at any
+         window size. */
+      .empaques {
+        position: fixed;
+        z-index: 0;
+        left: 4%;
+        right: auto;
+        top: auto;
+        bottom: 1.5vh;
+        width: min(34vh, 430px);
       }
+
+      .marinela { width: 22%; max-width: 260px; }
     }
   </style>
 </head>
@@ -194,22 +223,19 @@
       <a class="again" href="{% url 'submission_form' campaign_slug=campaign.slug %}">Participar de nuevo</a>
     </div>
 
-    <div class="art-wrap">
-      <div class="art" aria-hidden="true"></div>
-      <div class="brand-bottom">
-        <img class="empaques" src="{% theme_static 'img/empaques.webp' %}"
-             alt="Galletas Príncipe" width="1000" height="505">
-        <div class="marinela">
-          <img src="{% theme_static 'img/logo_marinela.png' %}" alt="Marinela">
-        </div>
-      </div>
-    </div>
+  </div>
 
+  <div class="art">
+    <img class="empaques" src="{% theme_static 'img/empaques.webp' %}"
+         alt="Galletas Príncipe" width="1000" height="505">
   </div>
 </div>
 
 <footer class="page-footer">
-  <img src="{% theme_static 'img/footer_text.png' %}"
+  <div class="marinela">
+    <img src="{% theme_static 'img/logo_marinela.png' %}" alt="Marinela">
+  </div>
+  <img class="footer-text" src="{% theme_static 'img/footer_text.png' %}"
        alt="Promoción válida del 24 de agosto al 02 de octubre. La bicicleta mostrada es únicamente de carácter ilustrativo.">
 </footer>
 

@@ -133,6 +133,28 @@ def _pick_trivia_question(campaign):
     )
 
 
+def root_redirect(request):
+    """Send the bare domain to its campaign's submission form.
+
+    Single-campaign domains (bimbotepremia.com) are what people actually
+    type, so the apex has to land somewhere. It is only unambiguous when the
+    host carries exactly one active campaign; hosts serving several, like
+    futbolerosnb.com, keep the previous 404 and route through their /g and
+    /h short links instead.
+    """
+    from django.http import Http404
+
+    host, _port = split_domain_port(request.get_host())
+    slugs = list(
+        Campaign.objects
+        .filter(domain__hostname=host, is_active=True)
+        .values_list("slug", flat=True)[:2]
+    )
+    if len(slugs) != 1:
+        raise Http404("No single active campaign for this host")
+    return redirect("submission_form", campaign_slug=slugs[0])
+
+
 def submission_form(request, campaign_slug):
     campaign = _get_campaign_for_host(request, campaign_slug)
     now = timezone.now()

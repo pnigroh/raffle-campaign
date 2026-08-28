@@ -178,6 +178,36 @@ class PrincipeFormRenderTests(_IsolatedRootsMixin, TestCase):
         self.assertIn("30 bicicletas", html)
 
 
+class RootRedirectTests(_IsolatedRootsMixin, TestCase):
+    """The apex has to land somewhere now that the domain is pointed."""
+
+    def setUp(self):
+        call_command("provision_principe", domain=TEST_HOST, verbosity=0)
+        self.campaign = Campaign.objects.get(slug="principe-ruedas-cr")
+
+    def test_bare_domain_redirects_to_the_form(self):
+        resp = Client(HTTP_HOST=TEST_HOST).get("/")
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp["Location"], f"/submit/{self.campaign.slug}/")
+
+    def test_host_with_several_active_campaigns_still_404s(self):
+        domain = Domain.objects.get(hostname=TEST_HOST)
+        Campaign.objects.create(
+            domain=domain, slug="second-campaign", name="Second",
+            start_date=self.campaign.start_date, end_date=self.campaign.end_date,
+            is_active=True, theme=self.campaign.theme,
+        )
+        self.assertEqual(Client(HTTP_HOST=TEST_HOST).get("/").status_code, 404)
+
+    def test_inactive_campaign_does_not_satisfy_the_redirect(self):
+        Campaign.objects.filter(pk=self.campaign.pk).update(is_active=False)
+        self.assertEqual(Client(HTTP_HOST=TEST_HOST).get("/").status_code, 404)
+
+    def test_unknown_host_404s(self):
+        with override_settings(ALLOWED_HOSTS=list(settings.ALLOWED_HOSTS) + ["nobody.test"]):
+            self.assertEqual(Client(HTTP_HOST="nobody.test").get("/").status_code, 404)
+
+
 class PrincipeSubmissionTests(_IsolatedRootsMixin, TestCase):
     def setUp(self):
         call_command("provision_principe", domain=TEST_HOST, verbosity=0)
