@@ -305,14 +305,25 @@
       min-width: 150px;
       max-width: 300px;
       background: var(--navy);
-      /* Domed top, as in the comp: measured there, the arch rises 10.6% of
-         the panel's width at the centre. The vertical radius resolves
-         against height, which padding keeps at ~62% of the width -- so 18%
-         of height lands on that same 10.6%. */
-      border-radius: 50% 50% 0 0 / 18% 18% 0 0;
-      padding: 16% 9% 8%;
+      /* Domed top, as in the comp, where the arch rises 10.6% of the panel's
+         width. The vertical radius resolves against height, which the logo's
+         margins hold at ~67% of the width, so 16% of height lands on that
+         same 10.6%. */
+      border-radius: 50% 50% 0 0 / 16% 16% 0 0;
+      /* Flex, so the logo's margins size the panel instead of collapsing out
+         of it. Padding is deliberately not used: percentage padding resolves
+         against the containing block -- the full-width footer -- not against
+         this panel. Margins on the child resolve against the parent, which
+         is the box we actually want to measure against. */
+      display: flex;
     }
-    .marinela img { width: 100%; height: auto; display: block; }
+    .marinela img {
+      display: block;
+      width: 78%;
+      height: auto;
+      /* Comp proportions, as fractions of the panel's own width. */
+      margin: 18% 11% 12%;
+    }
 
     /* ==================================================================
        Desktop: two columns, form on the right.
