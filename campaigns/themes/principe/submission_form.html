@@ -1,0 +1,825 @@
+{% load theme_tags %}<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ campaign.display_title|default:campaign.name }}</title>
+  <style>
+    @font-face {
+      font-family: 'Mikado';
+      src: url("{% theme_static 'fonts/Mikado-Medium.otf' %}") format('opentype');
+      font-weight: 500; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Mikado';
+      src: url("{% theme_static 'fonts/Mikado-Bold.otf' %}") format('opentype');
+      font-weight: 700; font-display: swap;
+    }
+
+    :root {
+      --blue:   #2ea9de;
+      --navy:   #203978;
+      --yellow: #ebc216;
+      --red:    #da291c;
+      --input:  #dcdddd;
+      --ink:    #1a1a1a;
+      --sans: 'Mikado', 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: var(--sans);
+      font-weight: 500;
+      background: var(--blue);
+      color: #fff;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    /* ==================================================================
+       Page frame.
+
+       Mobile stacks: the pattern half of the supplied vertical background
+       (stretched to whatever height the form ends up being), then the
+       bike / "30 BICICLETAS" half at its natural aspect, then the navy
+       footer. The two background pieces are cut from the same source
+       image at row 4600, so they meet without a visible seam however
+       tall the form grows.
+
+       Desktop swaps to the horizontal background -- whose artwork already
+       sits left with open blue on the right -- and lays the shell out as
+       two columns with the form in the right one.
+       ================================================================== */
+    .page-body {
+      background: var(--blue) url("{% theme_static 'img/bg_mobile_body.jpg' %}") center top / 100% 100% no-repeat;
+      padding: 18px 0 0;
+    }
+
+    .shell {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .logo-bimbo {
+      display: block;
+      width: 108px;
+      height: auto;
+      margin-left: auto;
+    }
+    .logo-principe {
+      display: block;
+      width: min(100%, 380px);
+      height: auto;
+      margin: 10px auto 22px;
+    }
+
+    /* ==================== Form card ==================== */
+    .entry { margin: 0; }
+
+    .card {
+      background: #fff;
+      border-radius: 30px;
+      padding: 26px 22px 30px;
+      box-shadow: 0 10px 30px rgba(0, 40, 80, .16);
+    }
+
+    .field { margin-bottom: 14px; }
+
+    .field label,
+    .upload-label {
+      display: block;
+      font-weight: 700;
+      font-size: 17px;
+      line-height: 1.25;
+      color: var(--ink);
+      margin-bottom: 7px;
+    }
+
+    .field input[type="text"],
+    .field input[type="email"],
+    .field input[type="tel"],
+    .field input[type="number"],
+    .field select,
+    .field textarea {
+      width: 100%;
+      background: var(--input);
+      border: 2px solid transparent;
+      border-radius: 11px;
+      padding: 11px 14px;
+      font-family: var(--sans);
+      font-weight: 500;
+      font-size: 16px;
+      color: var(--ink);
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .field textarea { min-height: 96px; resize: vertical; }
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      outline: none;
+      border-color: var(--blue);
+      background: #fff;
+    }
+
+    .field--select select {
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' width='12' height='8'><path fill='%23606060' d='M6 8 0 0h12z'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+    }
+
+    /* ==================== File upload ==================== */
+    .field--file { margin: 20px 0 0; }
+    .upload-drop {
+      position: relative;
+      background: var(--input);
+      border: 2px solid transparent;
+      border-radius: 11px;
+      min-height: 190px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 16px;
+      cursor: pointer;
+      overflow: hidden;
+    }
+    .upload-drop.is-dragover { border-color: var(--blue); background: #e9f6fd; }
+    .upload-drop input[type="file"] {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .upload-icon { color: #4a4a4a; width: 76px; display: block; }
+    .upload-icon svg { width: 100%; height: auto; display: block; }
+    .upload-thumb {
+      max-width: 100%;
+      max-height: 200px;
+      border-radius: 8px;
+      display: block;
+    }
+    .upload-filename {
+      font-size: 14px;
+      color: #4a4a4a;
+      text-align: center;
+      word-break: break-word;
+    }
+
+    /* ==================== Consent ==================== */
+    .consent { margin: 20px 4px 0; }
+    .consent-label {
+      position: relative;
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      gap: 10px;
+      align-items: start;
+      cursor: pointer;
+    }
+    .consent-label input[type="checkbox"] {
+      position: absolute;
+      opacity: 0;
+      width: 22px;
+      height: 22px;
+      margin: 0;
+    }
+    .consent-box {
+      width: 20px;
+      height: 20px;
+      margin-top: 2px;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      display: block;
+    }
+    .consent-label input:checked ~ .consent-box {
+      background: #fff;
+      box-shadow: inset 0 0 0 4px var(--navy);
+    }
+    .consent-label input:focus-visible ~ .consent-box {
+      outline: 3px solid var(--yellow);
+      outline-offset: 2px;
+    }
+    .consent-text {
+      font-size: 15px;
+      line-height: 1.45;
+      color: #fff;
+      text-shadow: 0 1px 2px rgba(0, 40, 80, .28);
+    }
+
+    /* ==================== Submit ==================== */
+    .btn-participar {
+      display: block;
+      width: min(100%, 330px);
+      margin: 22px auto 0;
+      padding: 0;
+      border: 0;
+      background: none;
+      cursor: pointer;
+      transition: transform .12s ease;
+    }
+    .btn-participar img { width: 100%; height: auto; display: block; }
+    .btn-participar:hover { transform: translateY(-2px); }
+    .btn-participar:active { transform: translateY(1px); }
+    .btn-participar[disabled] { opacity: .6; cursor: default; transform: none; }
+
+    /* ==================== Errors ==================== */
+    .err {
+      display: none;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--red);
+      margin-top: 5px;
+    }
+    .has-error .err { display: block; }
+    .has-error input,
+    .has-error select,
+    .has-error textarea,
+    .has-error .upload-drop { border-color: var(--red); }
+    .consent.has-error .err { color: #fff2b0; }
+
+    .form-errors {
+      background: rgba(218, 41, 28, .92);
+      color: #fff;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      font-size: 15px;
+    }
+    .closed-notice {
+      background: rgba(32, 57, 120, .92);
+      color: #fff;
+      border-radius: 16px;
+      padding: 18px 20px;
+      text-align: center;
+      font-size: 16px;
+      line-height: 1.4;
+    }
+
+    /* ==================================================================
+       Bottom art band (mobile) -- the bike / "30 BICICLETAS" half of the
+       vertical background, with the packs laid over it as in the comp.
+       Hidden on desktop, where the horizontal background already carries
+       the same artwork.
+       ================================================================== */
+    .art {
+      position: relative;
+      margin: 8px 0 0;
+      background: url("{% theme_static 'img/bg_mobile_art.jpg' %}") center top / 100% 100% no-repeat;
+      aspect-ratio: 1000 / 880;
+    }
+    .empaques {
+      position: absolute;
+      right: 4%;
+      top: 16%;
+      width: 46%;
+      height: auto;
+    }
+
+    /* ==================================================================
+       Footer. The Marinela panel is a tab stuck to the top edge of the
+       navy bar at the right, exactly as in the comp -- `bottom: 100%`
+       parks its base on the bar's top edge at every width.
+       ================================================================== */
+    .page-footer {
+      position: relative;
+      z-index: 2;
+      background: var(--navy);
+      padding: 16px 20px;
+    }
+    .footer-text {
+      display: block;
+      width: min(100%, 620px);
+      height: auto;
+      margin: 0 auto;
+    }
+    .marinela {
+      position: absolute;
+      right: 6%;
+      bottom: 100%;
+      width: 34%;
+      min-width: 150px;
+      max-width: 300px;
+      background: var(--navy);
+      /* Domed top, as in the comp, where the arch rises 10.6% of the panel's
+         width. The vertical radius resolves against height, which the logo's
+         margins hold at ~67% of the width, so 16% of height lands on that
+         same 10.6%. */
+      border-radius: 50% 50% 0 0 / 16% 16% 0 0;
+      /* Flex, so the logo's margins size the panel instead of collapsing out
+         of it. Padding is deliberately not used: percentage padding resolves
+         against the containing block -- the full-width footer -- not against
+         this panel. Margins on the child resolve against the parent, which
+         is the box we actually want to measure against. */
+      display: flex;
+    }
+    .marinela img {
+      display: block;
+      width: 78%;
+      height: auto;
+      /* Comp proportions, as fractions of the panel's own width. */
+      margin: 18% 11% 12%;
+    }
+
+    /* ==================================================================
+       Motion.
+
+       The campaign line is "te pone en ruedas", so the one deliberate
+       flourish is a wheel rolling across a track while the page loads.
+       Everything else stays quiet: a short entrance stagger and press /
+       focus feedback, nothing that competes with the artwork.
+
+       All of it is gated on `.js`, set by an inline script in the head.
+       Without scripting the page renders complete and static -- the
+       loader never appears and nothing starts hidden.
+       ================================================================== */
+
+    .loader {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 30px;
+      padding: 24px;
+      background: linear-gradient(180deg, #2ea9de 0%, #5cc0ed 100%);
+    }
+    .js .loader { display: flex; }
+
+    .loader-logo {
+      width: min(70%, 300px);
+      height: auto;
+      animation: loader-logo-in .5s ease-out both;
+    }
+    @keyframes loader-logo-in {
+      from { opacity: 0; transform: translateY(10px) scale(.97); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    /* Track and travel are both sized from the viewport, never from the
+       elements themselves, so the wheel's translateX resolves against the
+       same number the track is drawn at. */
+    .loader-track {
+      position: relative;
+      width: min(240px, 62vw);
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .35);
+    }
+    .loader-fill {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: var(--yellow);
+      transform-origin: left center;
+      animation: loader-fill 1.5s cubic-bezier(.45, .05, .35, 1) infinite;
+    }
+    @keyframes loader-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+    /* Hub, six spokes and a tyre -- a bicycle wheel, drawn rather than
+       shipped, so the loader costs no extra request. */
+    .loader-wheel {
+      position: absolute;
+      left: 0;
+      bottom: -13px;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 3px solid var(--navy);
+      background:
+        radial-gradient(circle, var(--navy) 0 22%, transparent 23%),
+        repeating-conic-gradient(var(--navy) 0 4deg, #fff 4deg 60deg);
+      animation: loader-roll 1.5s cubic-bezier(.45, .05, .35, 1) infinite;
+    }
+    @keyframes loader-roll {
+      from { transform: translateX(0) rotate(0deg); }
+      to   { transform: translateX(calc(min(240px, 62vw) - 30px)) rotate(720deg); }
+    }
+
+    /* Belt and braces. The give-up is a CSS animation rather than a timer
+       so that it cannot depend on the JS event loop: if the script is
+       blocked, throws, or never parses, the loader still clears itself
+       instead of stranding the visitor behind a full-screen overlay.
+       `.motion-fallback` does the same for the entrance states. */
+    .loader { animation: loader-give-up .4s ease-in 3.6s forwards; }
+    @keyframes loader-give-up { to { opacity: 0; visibility: hidden; } }
+
+    .loader.is-done {
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity .32s ease-in, visibility 0s linear .32s;
+      animation: none;   /* the fast path cancels the give-up cleanly */
+    }
+
+    /* --- Entrance ------------------------------------------------------ */
+    .js .reveal { opacity: 0; transform: translateY(14px); }
+    .js .reveal.is-in {
+      opacity: 1;
+      transform: none;
+      transition: opacity .4s ease-out, transform .4s ease-out;
+    }
+
+    /* --- Micro-interactions -------------------------------------------- */
+    .field input,
+    .field select,
+    .field textarea,
+    .upload-drop {
+      transition: background-color .16s ease-out, border-color .16s ease-out;
+    }
+
+    .upload-drop.has-file { background: #eaf6ec; }
+    .upload-thumb { animation: thumb-in .26s ease-out both; }
+    @keyframes thumb-in {
+      from { opacity: 0; transform: scale(.94); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    .consent-box { transition: background-color .16s ease-out, box-shadow .16s ease-out; }
+    .consent-label input:checked ~ .consent-box { animation: tick .22s ease-out; }
+    @keyframes tick {
+      0%   { transform: scale(.72); }
+      60%  { transform: scale(1.12); }
+      100% { transform: scale(1); }
+    }
+
+    .btn-participar:active { transform: scale(.97); }
+
+    /* Submitting: the label is artwork, so the button dims and a spinner
+       sits on top rather than swapping the image out. */
+    .btn-participar { position: relative; }
+    .btn-participar.is-sending img { opacity: .35; }
+    .btn-participar.is-sending::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 26px;
+      height: 26px;
+      margin: -13px 0 0 -13px;
+      border: 3px solid rgba(32, 57, 120, .25);
+      border-top-color: var(--navy);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .field.has-error input,
+    .field.has-error select,
+    .field.has-error textarea,
+    .field--file.has-error .upload-drop { animation: nudge .3s ease-out; }
+    @keyframes nudge {
+      0%, 100% { transform: translateX(0); }
+      25%      { transform: translateX(-4px); }
+      75%      { transform: translateX(4px); }
+    }
+
+    .motion-fallback .reveal { opacity: 1 !important; transform: none !important; }
+
+    /* ==================================================================
+       Desktop: two columns, form on the right.
+       ================================================================== */
+    @media (min-width: 900px) {
+      .page-body {
+        background: var(--blue) url("{% theme_static 'img/bg_desktop.jpg' %}") left center / cover no-repeat fixed;
+        min-height: 100vh;
+        display: flex;
+        padding: 0;
+      }
+      /* The left column is left to the background artwork, which already
+         carries the bike and the "30 BICICLETAS" lockup: only the packs sit
+         on top of it. Everything else -- both logos and the form -- stacks
+         down the right column. */
+      .shell {
+        max-width: 1280px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 32px 48px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto 1fr;
+        grid-template-areas:
+          ".  bimbo"
+          ".  principe"
+          ".  form";
+        column-gap: 40px;
+        align-items: start;
+      }
+      .logo-bimbo { grid-area: bimbo; width: 132px; justify-self: end; }
+      .logo-principe {
+        grid-area: principe;
+        width: min(100%, 400px);
+        margin: 18px auto 0;
+      }
+      .entry {
+        grid-area: form;
+        justify-self: end;
+        width: 100%;
+        max-width: 470px;
+        /* Clears the Marinela tab, which rises out of the navy bar below. */
+        padding: 24px 0 150px;
+      }
+
+      /* The bike band is dropped -- the desktop background carries it. The
+         band is only collapsed out of the flex flow rather than hidden,
+         because the packs live inside it. */
+      .art {
+        position: absolute;
+        width: 0;
+        height: 0;
+        margin: 0;
+        background: none;
+        aspect-ratio: auto;
+      }
+
+      /* The desktop background is `fixed`, so the packs are pinned too:
+         anything else slides them over the "GANA 1 DE LAS 30" lockup as the
+         page scrolls.
+
+         The sizing is geometry, not taste. That lockup ends at y 79% of the
+         background; with `cover` its lowest possible landing point is 79% of
+         the viewport height, so 21vh is the least headroom there can ever be
+         below it. The packs are 1000x505, so 34vh wide makes them 17.2vh
+         tall -- that plus the 1.5vh gap always clears the lockup, at any
+         window size. */
+      .empaques {
+        position: fixed;
+        z-index: 0;
+        left: 4%;
+        right: auto;
+        top: auto;
+        bottom: 1.5vh;
+        width: min(34vh, 430px);
+      }
+
+      .marinela { width: 17%; max-width: 205px; }
+
+      .consent-text { font-size: 14.5px; }
+    }
+
+    /* ==================================================================
+       Reduced motion: keep the meaning, drop the movement. The loader
+       still gates the page, it just does not animate.
+       ================================================================== */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+      }
+      .js .reveal { opacity: 1; transform: none; }
+      .loader-wheel { transform: translateX(calc(min(240px, 62vw) - 30px)); }
+      .loader-fill { transform: scaleX(1); }
+    }
+  </style>
+  <script>
+    // Set before first paint so the loader and the entrance states only ever
+    // apply when scripting is available. The timeout is a safety net: if the
+    // main script fails, the page still shows its content.
+    // Register the safety net first, so the entrance states can never be
+    // left stuck hidden even if the line after this one is what fails.
+    setTimeout(function () {
+      document.documentElement.className += ' motion-fallback';
+    }, 4000);
+    document.documentElement.className += ' js';
+  </script>
+</head>
+<body>
+
+<div class="loader" id="pageLoader" role="status" aria-label="Cargando">
+  <img class="loader-logo" src="{% theme_static 'img/logo_principe.png' %}" alt="">
+  <div class="loader-track">
+    <span class="loader-fill"></span>
+    <span class="loader-wheel"></span>
+  </div>
+</div>
+
+<div class="page-body">
+  <div class="shell">
+
+    <img class="logo-bimbo reveal" src="{% theme_static 'img/logo_bimbo.png' %}" alt="Bimbo">
+    <img class="logo-principe reveal" src="{% theme_static 'img/logo_principe.png' %}"
+         alt="Príncipe te pone en ruedas">
+
+    {% if campaign_open %}
+      <form class="entry reveal" id="entryForm" method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        {% load dynamic_form_tags %}
+
+        {% if form.non_field_errors %}
+          <div class="form-errors">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        {% comment %}
+          The consent tick sits outside the white card in the comp, so it is
+          pulled out of the loop and rendered after it -- still schema-driven.
+        {% endcomment %}
+        <div class="card">
+          {% for spec in form_fields %}
+            {% if spec.key != 'consent' %}{% theme_partial spec=spec %}{% endif %}
+          {% endfor %}
+
+          {% if campaign.validate_submission_code %}
+            <div class="field{% if form.submission_code_input.errors %} has-error{% endif %}">
+              <label for="{{ form.submission_code_input.id_for_label }}">{{ form.submission_code_input.label }}</label>
+              {{ form.submission_code_input }}
+              <span class="err">{{ form.submission_code_input.errors|join:" " }}</span>
+            </div>
+          {% endif %}
+        </div>
+
+        {% for spec in form_fields %}
+          {% if spec.key == 'consent' %}{% theme_partial spec=spec %}{% endif %}
+        {% endfor %}
+
+        <button type="submit" class="btn-participar" data-submit>
+          <img src="{% theme_static 'img/btn_participar.png' %}" alt="Participar">
+        </button>
+      </form>
+    {% else %}
+      <div class="entry reveal">
+        <div class="closed-notice">
+          Esta promoción no está recibiendo participaciones en este momento.
+        </div>
+      </div>
+    {% endif %}
+
+  </div>
+
+  <div class="art">
+    <img class="empaques" src="{% theme_static 'img/empaques.webp' %}"
+         alt="Galletas Príncipe" width="1000" height="505">
+  </div>
+</div>
+
+<footer class="page-footer">
+  <div class="marinela">
+    <img src="{% theme_static 'img/logo_marinela.png' %}" alt="Marinela">
+  </div>
+  <img class="footer-text" src="{% theme_static 'img/footer_text.png' %}"
+       alt="Promoción válida del 24 de agosto al 02 de octubre. La bicicleta mostrada es únicamente de carácter ilustrativo.">
+</footer>
+
+<script>
+(function () {
+  // --- Page loader --------------------------------------------------------
+  var loader = document.getElementById('pageLoader');
+
+  function reveal() {
+    var items = document.querySelectorAll('.reveal');
+    Array.prototype.forEach.call(items, function (el, i) {
+      setTimeout(function () { el.classList.add('is-in'); }, i * 80);
+    });
+  }
+
+  function dismiss() {
+    if (!loader || loader.classList.contains('is-done')) return;
+    loader.classList.add('is-done');
+    reveal();
+  }
+
+  if (loader) {
+    if (document.readyState === 'complete') {
+      setTimeout(dismiss, 240);
+    } else {
+      window.addEventListener('load', function () { setTimeout(dismiss, 240); });
+    }
+    // A slow image must never hold the form hostage.
+    setTimeout(dismiss, 3200);
+  } else {
+    reveal();
+  }
+
+  // --- File upload: swap the arrow for a thumbnail once a file is picked ---
+  document.querySelectorAll('[data-upload-drop]').forEach(function (drop) {
+    var input = drop.querySelector('input[type="file"]');
+    var icon  = drop.querySelector('[data-upload-icon]');
+    var thumb = drop.querySelector('[data-upload-thumb]');
+    var name  = drop.querySelector('[data-upload-filename]');
+    if (!input) return;
+
+    function show(file) {
+      if (!file) return;
+      name.textContent = file.name;
+      name.hidden = false;
+      icon.hidden = true;
+      drop.classList.add('has-file');
+      if (file.type && file.type.indexOf('image/') === 0) {
+        var reader = new FileReader();
+        reader.onload = function (e) { thumb.src = e.target.result; thumb.hidden = false; };
+        reader.readAsDataURL(file);
+      } else {
+        thumb.hidden = true;
+      }
+    }
+
+    input.addEventListener('change', function () { show(input.files[0]); });
+
+    ['dragenter', 'dragover'].forEach(function (evt) {
+      drop.addEventListener(evt, function (e) {
+        e.preventDefault(); drop.classList.add('is-dragover');
+      });
+    });
+    ['dragleave', 'drop'].forEach(function (evt) {
+      drop.addEventListener(evt, function (e) {
+        e.preventDefault(); drop.classList.remove('is-dragover');
+      });
+    });
+    drop.addEventListener('drop', function (e) {
+      if (e.dataTransfer && e.dataTransfer.files.length) {
+        input.files = e.dataTransfer.files;
+        show(input.files[0]);
+      }
+    });
+  });
+
+  // --- Validation ---------------------------------------------------------
+  // Checked on blur rather than on every keystroke, so nobody is told they
+  // are wrong while still typing. The server remains the authority; this
+  // only saves a round trip. Messages say what to do, not what went wrong.
+  var form = document.getElementById('entryForm');
+  if (!form) return;
+
+  var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  var MSG = {
+    required: 'Completá este campo.',
+    email:    'Revisá tu correo electrónico.',
+    file:     'Subí una foto de tu factura de compra.',
+    consent:  'Necesitamos tu consentimiento para participar.'
+  };
+
+  function wrap(el)  { return el.closest('.field, .consent'); }
+
+  function problem(el) {
+    if (!el.required) return '';
+    if (el.type === 'checkbox') return el.checked ? '' : MSG.consent;
+    if (el.type === 'file')     return el.files.length ? '' : MSG.file;
+    var v = (el.value || '').trim();
+    if (!v) return MSG.required;
+    if (el.type === 'email' && !EMAIL.test(v)) return MSG.email;
+    return '';
+  }
+
+  function mark(el) {
+    var w = wrap(el);
+    if (!w) return '';
+    var msg = problem(el);
+    var err = w.querySelector('.err');
+    w.classList.toggle('has-error', !!msg);
+    if (err) err.textContent = msg;
+    return msg;
+  }
+
+  var fields = Array.prototype.slice.call(
+    form.querySelectorAll('input, select, textarea')
+  ).filter(function (el) { return el.type !== 'hidden'; });
+
+  fields.forEach(function (el) {
+    el.addEventListener('blur', function () { mark(el); });
+    // Once a field is flagged, clear it the moment it becomes valid.
+    var live = (el.type === 'checkbox' || el.type === 'file' || el.tagName === 'SELECT')
+      ? 'change' : 'input';
+    el.addEventListener(live, function () {
+      var w = wrap(el);
+      if (w && w.classList.contains('has-error')) { mark(el); }
+    });
+  });
+
+  var sending = false;
+  form.addEventListener('submit', function (e) {
+    if (sending) { e.preventDefault(); return; }
+
+    var firstBad = null;
+    fields.forEach(function (el) { if (mark(el) && !firstBad) { firstBad = el; } });
+
+    if (firstBad) {
+      e.preventDefault();
+      var target = firstBad.type === 'file'
+        ? firstBad.closest('.field')
+        : firstBad;
+      if (target.scrollIntoView) {
+        target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+      firstBad.focus({ preventScroll: true });
+      return;
+    }
+
+    sending = true;
+    var btn = form.querySelector('[data-submit]');
+    if (btn) {
+      btn.classList.add('is-sending');
+      // Disabling has to wait a tick, or the browser cancels the submission
+      // that is already under way.
+      setTimeout(function () { btn.disabled = true; }, 0);
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

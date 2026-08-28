@@ -1,0 +1,474 @@
+{% load theme_tags %}<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>¡Gracias por participar! · {{ campaign.display_title|default:campaign.name }}</title>
+  <style>
+    @font-face {
+      font-family: 'Mikado';
+      src: url("{% theme_static 'fonts/Mikado-Medium.otf' %}") format('opentype');
+      font-weight: 500; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Mikado';
+      src: url("{% theme_static 'fonts/Mikado-Bold.otf' %}") format('opentype');
+      font-weight: 700; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Cookit';
+      src: url("{% theme_static 'fonts/Cookit-Regular.otf' %}") format('opentype');
+      font-weight: 400; font-display: swap;
+    }
+
+    :root {
+      --blue:  #2ea9de;
+      --navy:  #203978;
+      --ink:   #1a1a1a;
+      --sans: 'Mikado', 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: var(--sans);
+      font-weight: 500;
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .page-body {
+      background: var(--blue) url("{% theme_static 'img/bg_mobile_body.jpg' %}") center top / 100% 100% no-repeat;
+      padding: 18px 0 0;
+    }
+    .shell {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .logo-bimbo { display: block; width: 108px; height: auto; margin-left: auto; }
+    .logo-principe {
+      display: block;
+      width: min(100%, 380px);
+      height: auto;
+      margin: 10px auto 22px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 30px;
+      padding: 34px 26px 38px;
+      text-align: center;
+      color: var(--ink);
+      box-shadow: 0 10px 30px rgba(0, 40, 80, .16);
+    }
+    .card h1 {
+      font-family: 'Cookit', var(--sans);
+      font-weight: 400;
+      font-size: clamp(30px, 8vw, 42px);
+      line-height: 1.1;
+      color: var(--navy);
+      margin: 0 0 14px;
+    }
+    .card p {
+      font-size: 17px;
+      line-height: 1.45;
+      margin: 0 0 12px;
+    }
+    .card p:last-child { margin-bottom: 0; }
+    .card .fineprint { font-size: 15px; color: #555; }
+
+    .again {
+      display: inline-block;
+      margin-top: 22px;
+      background: var(--navy);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 16px;
+      border-radius: 999px;
+      padding: 13px 30px;
+    }
+    .again:hover { background: #17295c; }
+
+    /* Bottom art band -- same two-piece background split as the form page. */
+    .art {
+      position: relative;
+      margin: 8px 0 0;
+      background: url("{% theme_static 'img/bg_mobile_art.jpg' %}") center top / 100% 100% no-repeat;
+      aspect-ratio: 1000 / 880;
+    }
+    .empaques {
+      position: absolute; right: 4%; top: 16%; width: 46%; height: auto;
+    }
+
+    /* The Marinela panel is a tab stuck to the top edge of the navy bar at
+       the right, as in the comp -- `bottom: 100%` parks its base on the
+       bar's top edge at every width. */
+    .page-footer {
+      position: relative;
+      z-index: 2;
+      background: var(--navy);
+      padding: 16px 20px;
+    }
+    .footer-text {
+      display: block; width: min(100%, 620px); height: auto; margin: 0 auto;
+    }
+    .marinela {
+      position: absolute;
+      right: 6%;
+      bottom: 100%;
+      width: 34%;
+      min-width: 150px;
+      max-width: 300px;
+      background: var(--navy);
+      /* Domed top, as in the comp, where the arch rises 10.6% of the panel's
+         width. The vertical radius resolves against height, which the logo's
+         margins hold at ~67% of the width, so 16% of height lands on that
+         same 10.6%. */
+      border-radius: 50% 50% 0 0 / 16% 16% 0 0;
+      /* Flex, so the logo's margins size the panel instead of collapsing out
+         of it. Padding is deliberately not used: percentage padding resolves
+         against the containing block -- the full-width footer -- not against
+         this panel. Margins on the child resolve against the parent, which
+         is the box we actually want to measure against. */
+      display: flex;
+    }
+    .marinela img {
+      display: block;
+      width: 78%;
+      height: auto;
+      /* Comp proportions, as fractions of the panel's own width. */
+      margin: 18% 11% 12%;
+    }
+
+    /* ==================================================================
+       Motion.
+
+       The campaign line is "te pone en ruedas", so the one deliberate
+       flourish is a wheel rolling across a track while the page loads.
+       Everything else stays quiet: a short entrance stagger and press /
+       focus feedback, nothing that competes with the artwork.
+
+       All of it is gated on `.js`, set by an inline script in the head.
+       Without scripting the page renders complete and static -- the
+       loader never appears and nothing starts hidden.
+       ================================================================== */
+
+    .loader {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 30px;
+      padding: 24px;
+      background: linear-gradient(180deg, #2ea9de 0%, #5cc0ed 100%);
+    }
+    .js .loader { display: flex; }
+
+    .loader-logo {
+      width: min(70%, 300px);
+      height: auto;
+      animation: loader-logo-in .5s ease-out both;
+    }
+    @keyframes loader-logo-in {
+      from { opacity: 0; transform: translateY(10px) scale(.97); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    /* Track and travel are both sized from the viewport, never from the
+       elements themselves, so the wheel's translateX resolves against the
+       same number the track is drawn at. */
+    .loader-track {
+      position: relative;
+      width: min(240px, 62vw);
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .35);
+    }
+    .loader-fill {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: var(--yellow);
+      transform-origin: left center;
+      animation: loader-fill 1.5s cubic-bezier(.45, .05, .35, 1) infinite;
+    }
+    @keyframes loader-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+    /* Hub, six spokes and a tyre -- a bicycle wheel, drawn rather than
+       shipped, so the loader costs no extra request. */
+    .loader-wheel {
+      position: absolute;
+      left: 0;
+      bottom: -13px;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 3px solid var(--navy);
+      background:
+        radial-gradient(circle, var(--navy) 0 22%, transparent 23%),
+        repeating-conic-gradient(var(--navy) 0 4deg, #fff 4deg 60deg);
+      animation: loader-roll 1.5s cubic-bezier(.45, .05, .35, 1) infinite;
+    }
+    @keyframes loader-roll {
+      from { transform: translateX(0) rotate(0deg); }
+      to   { transform: translateX(calc(min(240px, 62vw) - 30px)) rotate(720deg); }
+    }
+
+    /* Belt and braces. The give-up is a CSS animation rather than a timer
+       so that it cannot depend on the JS event loop: if the script is
+       blocked, throws, or never parses, the loader still clears itself
+       instead of stranding the visitor behind a full-screen overlay.
+       `.motion-fallback` does the same for the entrance states. */
+    .loader { animation: loader-give-up .4s ease-in 3.6s forwards; }
+    @keyframes loader-give-up { to { opacity: 0; visibility: hidden; } }
+
+    .loader.is-done {
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity .32s ease-in, visibility 0s linear .32s;
+      animation: none;   /* the fast path cancels the give-up cleanly */
+    }
+
+    /* --- Entrance ------------------------------------------------------ */
+    .js .reveal { opacity: 0; transform: translateY(14px); }
+    .js .reveal.is-in {
+      opacity: 1;
+      transform: none;
+      transition: opacity .4s ease-out, transform .4s ease-out;
+    }
+
+    /* --- Micro-interactions -------------------------------------------- */
+    .field input,
+    .field select,
+    .field textarea,
+    .upload-drop {
+      transition: background-color .16s ease-out, border-color .16s ease-out;
+    }
+
+    .upload-drop.has-file { background: #eaf6ec; }
+    .upload-thumb { animation: thumb-in .26s ease-out both; }
+    @keyframes thumb-in {
+      from { opacity: 0; transform: scale(.94); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    .consent-box { transition: background-color .16s ease-out, box-shadow .16s ease-out; }
+    .consent-label input:checked ~ .consent-box { animation: tick .22s ease-out; }
+    @keyframes tick {
+      0%   { transform: scale(.72); }
+      60%  { transform: scale(1.12); }
+      100% { transform: scale(1); }
+    }
+
+    .btn-participar:active { transform: scale(.97); }
+
+    /* Submitting: the label is artwork, so the button dims and a spinner
+       sits on top rather than swapping the image out. */
+    .btn-participar { position: relative; }
+    .btn-participar.is-sending img { opacity: .35; }
+    .btn-participar.is-sending::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 26px;
+      height: 26px;
+      margin: -13px 0 0 -13px;
+      border: 3px solid rgba(32, 57, 120, .25);
+      border-top-color: var(--navy);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .field.has-error input,
+    .field.has-error select,
+    .field.has-error textarea,
+    .field--file.has-error .upload-drop { animation: nudge .3s ease-out; }
+    @keyframes nudge {
+      0%, 100% { transform: translateX(0); }
+      25%      { transform: translateX(-4px); }
+      75%      { transform: translateX(4px); }
+    }
+
+    .motion-fallback .reveal { opacity: 1 !important; transform: none !important; }
+
+    @media (min-width: 900px) {
+      .page-body {
+        background: var(--blue) url("{% theme_static 'img/bg_desktop.jpg' %}") left center / cover no-repeat fixed;
+        min-height: 100vh;
+        display: flex;
+        padding: 0;
+      }
+      .shell {
+        max-width: 1280px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 32px 48px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto 1fr;
+        grid-template-areas:
+          ".  bimbo"
+          ".  principe"
+          ".  card";
+        column-gap: 40px;
+        align-items: start;
+      }
+      .logo-bimbo { grid-area: bimbo; width: 132px; justify-self: end; }
+      .logo-principe {
+        grid-area: principe;
+        width: min(100%, 400px);
+        margin: 18px auto 0;
+      }
+      .card {
+        grid-area: card;
+        justify-self: end;
+        width: 100%;
+        max-width: 470px;
+        /* Clears the Marinela tab, which rises out of the navy bar below. */
+        margin: 24px 0 150px;
+      }
+
+      /* The bike band is dropped -- the desktop background carries it. The
+         band is only collapsed out of the flex flow rather than hidden,
+         because the packs live inside it. */
+      .art {
+        position: absolute;
+        width: 0;
+        height: 0;
+        margin: 0;
+        background: none;
+        aspect-ratio: auto;
+      }
+
+      /* The desktop background is `fixed`, so the packs are pinned too:
+         anything else slides them over the "GANA 1 DE LAS 30" lockup as the
+         page scrolls.
+
+         The sizing is geometry, not taste. That lockup ends at y 79% of the
+         background; with `cover` its lowest possible landing point is 79% of
+         the viewport height, so 21vh is the least headroom there can ever be
+         below it. The packs are 1000x505, so 34vh wide makes them 17.2vh
+         tall -- that plus the 1.5vh gap always clears the lockup, at any
+         window size. */
+      .empaques {
+        position: fixed;
+        z-index: 0;
+        left: 4%;
+        right: auto;
+        top: auto;
+        bottom: 1.5vh;
+        width: min(34vh, 430px);
+      }
+
+      .marinela { width: 17%; max-width: 205px; }
+    }
+
+    /* ==================================================================
+       Reduced motion: keep the meaning, drop the movement. The loader
+       still gates the page, it just does not animate.
+       ================================================================== */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+      }
+      .js .reveal { opacity: 1; transform: none; }
+      .loader-wheel { transform: translateX(calc(min(240px, 62vw) - 30px)); }
+      .loader-fill { transform: scaleX(1); }
+    }
+  </style>
+  <script>
+    // Set before first paint so the loader and the entrance states only ever
+    // apply when scripting is available. The timeout is a safety net: if the
+    // main script fails, the page still shows its content.
+    // Register the safety net first, so the entrance states can never be
+    // left stuck hidden even if the line after this one is what fails.
+    setTimeout(function () {
+      document.documentElement.className += ' motion-fallback';
+    }, 4000);
+    document.documentElement.className += ' js';
+  </script>
+</head>
+<body>
+
+<div class="loader" id="pageLoader" role="status" aria-label="Cargando">
+  <img class="loader-logo" src="{% theme_static 'img/logo_principe.png' %}" alt="">
+  <div class="loader-track">
+    <span class="loader-fill"></span>
+    <span class="loader-wheel"></span>
+  </div>
+</div>
+
+<div class="page-body">
+  <div class="shell">
+
+    <img class="logo-bimbo reveal" src="{% theme_static 'img/logo_bimbo.png' %}" alt="Bimbo">
+    <img class="logo-principe reveal" src="{% theme_static 'img/logo_principe.png' %}"
+         alt="Príncipe te pone en ruedas">
+
+    <div class="card reveal">
+      <h1>¡Gracias por participar!</h1>
+      <p>Tu participación quedó registrada. Ya estás dentro del sorteo por
+         <strong>1 de las 30 bicicletas</strong>.</p>
+      <p class="fineprint">Guardá tu factura original: te la vamos a pedir si resultás
+         ganador. Si tenés más facturas, podés participar de nuevo.</p>
+      <a class="again" href="{% url 'submission_form' campaign_slug=campaign.slug %}">Participar de nuevo</a>
+    </div>
+
+  </div>
+
+  <div class="art">
+    <img class="empaques" src="{% theme_static 'img/empaques.webp' %}"
+         alt="Galletas Príncipe" width="1000" height="505">
+  </div>
+</div>
+
+<footer class="page-footer">
+  <div class="marinela">
+    <img src="{% theme_static 'img/logo_marinela.png' %}" alt="Marinela">
+  </div>
+  <img class="footer-text" src="{% theme_static 'img/footer_text.png' %}"
+       alt="Promoción válida del 24 de agosto al 02 de octubre. La bicicleta mostrada es únicamente de carácter ilustrativo.">
+</footer>
+
+<script>
+(function () {
+  var loader = document.getElementById('pageLoader');
+
+  function reveal() {
+    var items = document.querySelectorAll('.reveal');
+    Array.prototype.forEach.call(items, function (el, i) {
+      setTimeout(function () { el.classList.add('is-in'); }, i * 80);
+    });
+  }
+
+  function dismiss() {
+    if (!loader || loader.classList.contains('is-done')) return;
+    loader.classList.add('is-done');
+    reveal();
+  }
+
+  if (loader) {
+    if (document.readyState === 'complete') {
+      setTimeout(dismiss, 240);
+    } else {
+      window.addEventListener('load', function () { setTimeout(dismiss, 240); });
+    }
+    setTimeout(dismiss, 3200);
+  } else {
+    reveal();
+  }
+})();
+</script>
+
+</body>
+</html>

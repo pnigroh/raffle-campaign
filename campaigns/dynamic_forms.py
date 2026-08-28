@@ -139,19 +139,23 @@ def _builtin_field(entry, campaign):
     key = entry["key"]
     label = entry.get("label", key.replace("_", " ").title())
     required = bool(entry.get("required", False))
+    # Text builtins repeat the label inside the box unless the schema says
+    # otherwise; `"placeholder": ""` suppresses it for themes that already
+    # show the label above the field.
+    placeholder = entry.get("placeholder", label)
 
     if key in ("first_name", "last_name"):
         return forms.CharField(max_length=100, required=required, label=label,
-                               widget=forms.TextInput(attrs={"placeholder": label}))
+                               widget=forms.TextInput(attrs={"placeholder": placeholder}))
     if key == "email":
         return forms.EmailField(required=required, label=label,
-                                widget=forms.EmailInput(attrs={"placeholder": label}))
+                                widget=forms.EmailInput(attrs={"placeholder": placeholder}))
     if key == "phone":
         return forms.CharField(max_length=20, required=required, label=label,
-                               widget=forms.TextInput(attrs={"placeholder": label}))
+                               widget=forms.TextInput(attrs={"placeholder": placeholder}))
     if key == "county":
         return forms.CharField(max_length=100, required=required, label=label,
-                               widget=forms.TextInput(attrs={"placeholder": label}))
+                               widget=forms.TextInput(attrs={"placeholder": placeholder}))
     if key == "state":
         allowed = entry.get("allowed_states")
         if allowed:
