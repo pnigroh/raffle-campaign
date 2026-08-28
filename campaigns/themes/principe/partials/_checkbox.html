@@ -1,0 +1,8 @@
+<div class="consent{% if field.errors %} has-error{% endif %}">
+  <label class="consent-label" for="{{ field.id_for_label }}">
+    {{ field }}
+    <span class="consent-box" aria-hidden="true"></span>
+    <span class="consent-text">{{ spec.label }}</span>
+  </label>
+  <span class="err" data-err-for="{{ spec.key }}">{{ field.errors|join:" " }}</span>
+</div>

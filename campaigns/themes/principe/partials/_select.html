@@ -1,0 +1,5 @@
+<div class="field field--select{% if field.errors %} has-error{% endif %}">
+  <label for="{{ field.id_for_label }}">{{ spec.label }}</label>
+  {{ field }}
+  <span class="err" data-err-for="{{ spec.key }}">{{ field.errors|join:" " }}</span>
+</div>

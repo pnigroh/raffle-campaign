@@ -1,0 +1,217 @@
+{% load theme_tags %}<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>¡Gracias por participar! · {{ campaign.display_title|default:campaign.name }}</title>
+  <style>
+    @font-face {
+      font-family: 'Mikado';
+      src: url("{% theme_static 'fonts/Mikado-Medium.otf' %}") format('opentype');
+      font-weight: 500; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Mikado';
+      src: url("{% theme_static 'fonts/Mikado-Bold.otf' %}") format('opentype');
+      font-weight: 700; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Cookit';
+      src: url("{% theme_static 'fonts/Cookit-Regular.otf' %}") format('opentype');
+      font-weight: 400; font-display: swap;
+    }
+
+    :root {
+      --blue:  #2ea9de;
+      --navy:  #203978;
+      --ink:   #1a1a1a;
+      --sans: 'Mikado', 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: var(--sans);
+      font-weight: 500;
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .page-body {
+      background: var(--blue) url("{% theme_static 'img/bg_mobile_body.jpg' %}") center top / 100% 100% no-repeat;
+      padding: 18px 0 0;
+    }
+    .shell {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .logo-bimbo { display: block; width: 108px; height: auto; margin-left: auto; }
+    .logo-principe {
+      display: block;
+      width: min(100%, 380px);
+      height: auto;
+      margin: 10px auto 22px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 30px;
+      padding: 34px 26px 38px;
+      text-align: center;
+      color: var(--ink);
+      box-shadow: 0 10px 30px rgba(0, 40, 80, .16);
+    }
+    .card h1 {
+      font-family: 'Cookit', var(--sans);
+      font-weight: 400;
+      font-size: clamp(30px, 8vw, 42px);
+      line-height: 1.1;
+      color: var(--navy);
+      margin: 0 0 14px;
+    }
+    .card p {
+      font-size: 17px;
+      line-height: 1.45;
+      margin: 0 0 12px;
+    }
+    .card p:last-child { margin-bottom: 0; }
+    .card .fineprint { font-size: 15px; color: #555; }
+
+    .again {
+      display: inline-block;
+      margin-top: 22px;
+      background: var(--navy);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 16px;
+      border-radius: 999px;
+      padding: 13px 30px;
+    }
+    .again:hover { background: #17295c; }
+
+    /* Bottom art band -- same two-piece background split as the form page. */
+    .art-wrap { position: relative; margin: 8px -20px 0; }
+    .art {
+      background: url("{% theme_static 'img/bg_mobile_art.jpg' %}") center top / 100% 100% no-repeat;
+      aspect-ratio: 1000 / 880;
+    }
+    .brand-bottom { position: absolute; inset: 0; }
+    .brand-bottom .empaques {
+      position: absolute; right: 4%; top: 16%; width: 46%; height: auto;
+    }
+    .marinela {
+      position: absolute;
+      right: 6%;
+      bottom: 0;
+      width: 34%;
+      min-width: 150px;
+      background: var(--navy);
+      border-radius: 30px 30px 0 0;
+      padding: 20px 22px 14px;
+    }
+    .marinela img { width: 100%; height: auto; display: block; }
+
+    .page-footer { background: var(--navy); padding: 16px 20px; }
+    .page-footer img {
+      display: block; width: min(100%, 620px); height: auto; margin: 0 auto;
+    }
+
+    @media (min-width: 900px) {
+      .page-body {
+        background: var(--blue) url("{% theme_static 'img/bg_desktop.jpg' %}") left center / cover no-repeat fixed;
+        min-height: 100vh;
+        display: flex;
+        padding: 0;
+      }
+      .shell {
+        max-width: 1280px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 32px 48px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto 1fr;
+        grid-template-areas:
+          ".     bimbo"
+          ".     principe"
+          "brand card";
+        column-gap: 40px;
+        align-items: start;
+      }
+      .logo-bimbo { grid-area: bimbo; width: 132px; justify-self: end; }
+      .logo-principe {
+        grid-area: principe;
+        width: min(100%, 400px);
+        margin: 18px auto 0;
+      }
+      .card {
+        grid-area: card;
+        justify-self: end;
+        width: 100%;
+        max-width: 470px;
+        margin-top: 24px;
+      }
+
+      .art-wrap { display: contents; }
+      .art { display: none; }
+      .brand-bottom {
+        grid-area: brand;
+        position: static;
+        align-self: end;
+        display: flex;
+        align-items: flex-end;
+        gap: 28px;
+      }
+      .brand-bottom .empaques { position: static; width: 300px; }
+      .marinela {
+        position: static;
+        width: 230px;
+        min-width: 0;
+        border-radius: 30px;
+        padding: 20px 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-body">
+  <div class="shell">
+
+    <img class="logo-bimbo" src="{% theme_static 'img/logo_bimbo.png' %}" alt="Bimbo">
+    <img class="logo-principe" src="{% theme_static 'img/logo_principe.png' %}"
+         alt="Príncipe te pone en ruedas">
+
+    <div class="card">
+      <h1>¡Gracias por participar!</h1>
+      <p>Tu participación quedó registrada. Ya estás dentro del sorteo por
+         <strong>1 de las 30 bicicletas</strong>.</p>
+      <p class="fineprint">Guardá tu factura original: te la vamos a pedir si resultás
+         ganador. Si tenés más facturas, podés participar de nuevo.</p>
+      <a class="again" href="{% url 'submission_form' campaign_slug=campaign.slug %}">Participar de nuevo</a>
+    </div>
+
+    <div class="art-wrap">
+      <div class="art" aria-hidden="true"></div>
+      <div class="brand-bottom">
+        <img class="empaques" src="{% theme_static 'img/empaques.webp' %}"
+             alt="Galletas Príncipe" width="1000" height="505">
+        <div class="marinela">
+          <img src="{% theme_static 'img/logo_marinela.png' %}" alt="Marinela">
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer class="page-footer">
+  <img src="{% theme_static 'img/footer_text.png' %}"
+       alt="Promoción válida del 24 de agosto al 02 de octubre. La bicicleta mostrada es únicamente de carácter ilustrativo.">
+</footer>
+
+</body>
+</html>
