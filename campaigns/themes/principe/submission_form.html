@@ -326,6 +326,162 @@
     }
 
     /* ==================================================================
+       Motion.
+
+       The campaign line is "te pone en ruedas", so the one deliberate
+       flourish is a wheel rolling across a track while the page loads.
+       Everything else stays quiet: a short entrance stagger and press /
+       focus feedback, nothing that competes with the artwork.
+
+       All of it is gated on `.js`, set by an inline script in the head.
+       Without scripting the page renders complete and static -- the
+       loader never appears and nothing starts hidden.
+       ================================================================== */
+
+    .loader {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 30px;
+      padding: 24px;
+      background: linear-gradient(180deg, #2ea9de 0%, #5cc0ed 100%);
+    }
+    .js .loader { display: flex; }
+
+    .loader-logo {
+      width: min(70%, 300px);
+      height: auto;
+      animation: loader-logo-in .5s ease-out both;
+    }
+    @keyframes loader-logo-in {
+      from { opacity: 0; transform: translateY(10px) scale(.97); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    /* Track and travel are both sized from the viewport, never from the
+       elements themselves, so the wheel's translateX resolves against the
+       same number the track is drawn at. */
+    .loader-track {
+      position: relative;
+      width: min(240px, 62vw);
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .35);
+    }
+    .loader-fill {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: var(--yellow);
+      transform-origin: left center;
+      animation: loader-fill 1.5s cubic-bezier(.45, .05, .35, 1) infinite;
+    }
+    @keyframes loader-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+    /* Hub, six spokes and a tyre -- a bicycle wheel, drawn rather than
+       shipped, so the loader costs no extra request. */
+    .loader-wheel {
+      position: absolute;
+      left: 0;
+      bottom: -13px;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 3px solid var(--navy);
+      background:
+        radial-gradient(circle, var(--navy) 0 22%, transparent 23%),
+        repeating-conic-gradient(var(--navy) 0 4deg, #fff 4deg 60deg);
+      animation: loader-roll 1.5s cubic-bezier(.45, .05, .35, 1) infinite;
+    }
+    @keyframes loader-roll {
+      from { transform: translateX(0) rotate(0deg); }
+      to   { transform: translateX(calc(min(240px, 62vw) - 30px)) rotate(720deg); }
+    }
+
+    /* Belt and braces. The give-up is a CSS animation rather than a timer
+       so that it cannot depend on the JS event loop: if the script is
+       blocked, throws, or never parses, the loader still clears itself
+       instead of stranding the visitor behind a full-screen overlay.
+       `.motion-fallback` does the same for the entrance states. */
+    .loader { animation: loader-give-up .4s ease-in 3.6s forwards; }
+    @keyframes loader-give-up { to { opacity: 0; visibility: hidden; } }
+
+    .loader.is-done {
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity .32s ease-in, visibility 0s linear .32s;
+      animation: none;   /* the fast path cancels the give-up cleanly */
+    }
+
+    /* --- Entrance ------------------------------------------------------ */
+    .js .reveal { opacity: 0; transform: translateY(14px); }
+    .js .reveal.is-in {
+      opacity: 1;
+      transform: none;
+      transition: opacity .4s ease-out, transform .4s ease-out;
+    }
+
+    /* --- Micro-interactions -------------------------------------------- */
+    .field input,
+    .field select,
+    .field textarea,
+    .upload-drop {
+      transition: background-color .16s ease-out, border-color .16s ease-out;
+    }
+
+    .upload-drop.has-file { background: #eaf6ec; }
+    .upload-thumb { animation: thumb-in .26s ease-out both; }
+    @keyframes thumb-in {
+      from { opacity: 0; transform: scale(.94); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    .consent-box { transition: background-color .16s ease-out, box-shadow .16s ease-out; }
+    .consent-label input:checked ~ .consent-box { animation: tick .22s ease-out; }
+    @keyframes tick {
+      0%   { transform: scale(.72); }
+      60%  { transform: scale(1.12); }
+      100% { transform: scale(1); }
+    }
+
+    .btn-participar:active { transform: scale(.97); }
+
+    /* Submitting: the label is artwork, so the button dims and a spinner
+       sits on top rather than swapping the image out. */
+    .btn-participar { position: relative; }
+    .btn-participar.is-sending img { opacity: .35; }
+    .btn-participar.is-sending::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 26px;
+      height: 26px;
+      margin: -13px 0 0 -13px;
+      border: 3px solid rgba(32, 57, 120, .25);
+      border-top-color: var(--navy);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .field.has-error input,
+    .field.has-error select,
+    .field.has-error textarea,
+    .field--file.has-error .upload-drop { animation: nudge .3s ease-out; }
+    @keyframes nudge {
+      0%, 100% { transform: translateX(0); }
+      25%      { transform: translateX(-4px); }
+      75%      { transform: translateX(4px); }
+    }
+
+    .motion-fallback .reveal { opacity: 1 !important; transform: none !important; }
+
+    /* ==================================================================
        Desktop: two columns, form on the right.
        ================================================================== */
     @media (min-width: 900px) {
@@ -401,23 +557,57 @@
         width: min(34vh, 430px);
       }
 
-      .marinela { width: 22%; max-width: 260px; }
+      .marinela { width: 17%; max-width: 205px; }
 
       .consent-text { font-size: 14.5px; }
     }
+
+    /* ==================================================================
+       Reduced motion: keep the meaning, drop the movement. The loader
+       still gates the page, it just does not animate.
+       ================================================================== */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+      }
+      .js .reveal { opacity: 1; transform: none; }
+      .loader-wheel { transform: translateX(calc(min(240px, 62vw) - 30px)); }
+      .loader-fill { transform: scaleX(1); }
+    }
   </style>
+  <script>
+    // Set before first paint so the loader and the entrance states only ever
+    // apply when scripting is available. The timeout is a safety net: if the
+    // main script fails, the page still shows its content.
+    // Register the safety net first, so the entrance states can never be
+    // left stuck hidden even if the line after this one is what fails.
+    setTimeout(function () {
+      document.documentElement.className += ' motion-fallback';
+    }, 4000);
+    document.documentElement.className += ' js';
+  </script>
 </head>
 <body>
+
+<div class="loader" id="pageLoader" role="status" aria-label="Cargando">
+  <img class="loader-logo" src="{% theme_static 'img/logo_principe.png' %}" alt="">
+  <div class="loader-track">
+    <span class="loader-fill"></span>
+    <span class="loader-wheel"></span>
+  </div>
+</div>
 
 <div class="page-body">
   <div class="shell">
 
-    <img class="logo-bimbo" src="{% theme_static 'img/logo_bimbo.png' %}" alt="Bimbo">
-    <img class="logo-principe" src="{% theme_static 'img/logo_principe.png' %}"
+    <img class="logo-bimbo reveal" src="{% theme_static 'img/logo_bimbo.png' %}" alt="Bimbo">
+    <img class="logo-principe reveal" src="{% theme_static 'img/logo_principe.png' %}"
          alt="Príncipe te pone en ruedas">
 
     {% if campaign_open %}
-      <form class="entry" id="entryForm" method="post" enctype="multipart/form-data" novalidate>
+      <form class="entry reveal" id="entryForm" method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
         {% load dynamic_form_tags %}
 
@@ -452,7 +642,7 @@
         </button>
       </form>
     {% else %}
-      <div class="entry">
+      <div class="entry reveal">
         <div class="closed-notice">
           Esta promoción no está recibiendo participaciones en este momento.
         </div>
@@ -477,6 +667,34 @@
 
 <script>
 (function () {
+  // --- Page loader --------------------------------------------------------
+  var loader = document.getElementById('pageLoader');
+
+  function reveal() {
+    var items = document.querySelectorAll('.reveal');
+    Array.prototype.forEach.call(items, function (el, i) {
+      setTimeout(function () { el.classList.add('is-in'); }, i * 80);
+    });
+  }
+
+  function dismiss() {
+    if (!loader || loader.classList.contains('is-done')) return;
+    loader.classList.add('is-done');
+    reveal();
+  }
+
+  if (loader) {
+    if (document.readyState === 'complete') {
+      setTimeout(dismiss, 240);
+    } else {
+      window.addEventListener('load', function () { setTimeout(dismiss, 240); });
+    }
+    // A slow image must never hold the form hostage.
+    setTimeout(dismiss, 3200);
+  } else {
+    reveal();
+  }
+
   // --- File upload: swap the arrow for a thumbnail once a file is picked ---
   document.querySelectorAll('[data-upload-drop]').forEach(function (drop) {
     var input = drop.querySelector('input[type="file"]');
@@ -490,6 +708,7 @@
       name.textContent = file.name;
       name.hidden = false;
       icon.hidden = true;
+      drop.classList.add('has-file');
       if (file.type && file.type.indexOf('image/') === 0) {
         var reader = new FileReader();
         reader.onload = function (e) { thumb.src = e.target.result; thumb.hidden = false; };
@@ -519,17 +738,86 @@
     });
   });
 
-  // --- Guard against double submits. Disabling has to wait a tick, or the
-  //     browser cancels the submission that is already under way. ---
+  // --- Validation ---------------------------------------------------------
+  // Checked on blur rather than on every keystroke, so nobody is told they
+  // are wrong while still typing. The server remains the authority; this
+  // only saves a round trip. Messages say what to do, not what went wrong.
   var form = document.getElementById('entryForm');
-  if (form) {
-    form.addEventListener('submit', function () {
-      setTimeout(function () {
-        var btn = form.querySelector('[data-submit]');
-        if (btn) { btn.disabled = true; }
-      }, 0);
-    });
+  if (!form) return;
+
+  var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  var MSG = {
+    required: 'Completá este campo.',
+    email:    'Revisá tu correo electrónico.',
+    file:     'Subí una foto de tu factura de compra.',
+    consent:  'Necesitamos tu consentimiento para participar.'
+  };
+
+  function wrap(el)  { return el.closest('.field, .consent'); }
+
+  function problem(el) {
+    if (!el.required) return '';
+    if (el.type === 'checkbox') return el.checked ? '' : MSG.consent;
+    if (el.type === 'file')     return el.files.length ? '' : MSG.file;
+    var v = (el.value || '').trim();
+    if (!v) return MSG.required;
+    if (el.type === 'email' && !EMAIL.test(v)) return MSG.email;
+    return '';
   }
+
+  function mark(el) {
+    var w = wrap(el);
+    if (!w) return '';
+    var msg = problem(el);
+    var err = w.querySelector('.err');
+    w.classList.toggle('has-error', !!msg);
+    if (err) err.textContent = msg;
+    return msg;
+  }
+
+  var fields = Array.prototype.slice.call(
+    form.querySelectorAll('input, select, textarea')
+  ).filter(function (el) { return el.type !== 'hidden'; });
+
+  fields.forEach(function (el) {
+    el.addEventListener('blur', function () { mark(el); });
+    // Once a field is flagged, clear it the moment it becomes valid.
+    var live = (el.type === 'checkbox' || el.type === 'file' || el.tagName === 'SELECT')
+      ? 'change' : 'input';
+    el.addEventListener(live, function () {
+      var w = wrap(el);
+      if (w && w.classList.contains('has-error')) { mark(el); }
+    });
+  });
+
+  var sending = false;
+  form.addEventListener('submit', function (e) {
+    if (sending) { e.preventDefault(); return; }
+
+    var firstBad = null;
+    fields.forEach(function (el) { if (mark(el) && !firstBad) { firstBad = el; } });
+
+    if (firstBad) {
+      e.preventDefault();
+      var target = firstBad.type === 'file'
+        ? firstBad.closest('.field')
+        : firstBad;
+      if (target.scrollIntoView) {
+        target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+      firstBad.focus({ preventScroll: true });
+      return;
+    }
+
+    sending = true;
+    var btn = form.querySelector('[data-submit]');
+    if (btn) {
+      btn.classList.add('is-sending');
+      // Disabling has to wait a tick, or the browser cancels the submission
+      // that is already under way.
+      setTimeout(function () { btn.disabled = true; }, 0);
+    }
+  });
 })();
 </script>
 
