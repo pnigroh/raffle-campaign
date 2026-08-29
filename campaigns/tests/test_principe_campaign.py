@@ -162,7 +162,7 @@ class PrincipeFormRenderTests(_IsolatedRootsMixin, TestCase):
         html = self.client.get(self.url).content.decode()
         for asset in ("bg_mobile_body.jpg", "bg_mobile_art.jpg", "bg_desktop.jpg",
                       "logo_principe.png", "logo_bimbo.png", "logo_marinela.png",
-                      "btn_participar.png", "empaques.webp", "footer_text.png",
+                      "btn_participar.png", "empaques.webp",
                       "Mikado-Bold.otf"):
             self.assertIn(asset, html, f"{asset} not referenced")
 
@@ -176,6 +176,15 @@ class PrincipeFormRenderTests(_IsolatedRootsMixin, TestCase):
         html = self.client.get(f"{self.url}success/").content.decode()
         self.assertIn("¡Gracias por participar!", html)
         self.assertIn("30 bicicletas", html)
+
+    def test_footer_states_the_promo_window_as_text(self):
+        """The dates are set as HTML, not baked into art, so copy edits are cheap."""
+        for url in (self.url, f"{self.url}success/"):
+            html = self.client.get(url).content.decode()
+            self.assertIn("Promoción válida del 1ro de Septiembre al 30 de Septiembre.",
+                          html, f"promo window missing from {url}")
+            self.assertIn("carácter ilustrativo", html)
+            self.assertNotIn("footer_text.png", html)
 
 
 class RootRedirectTests(_IsolatedRootsMixin, TestCase):

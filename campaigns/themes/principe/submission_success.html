@@ -25,6 +25,7 @@
       --blue:  #2ea9de;
       --navy:  #203978;
       --ink:   #1a1a1a;
+      --footer-accent: #fecc00;
       --sans: 'Mikado', 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
     }
 
@@ -112,8 +113,26 @@
       background: var(--navy);
       padding: 16px 20px;
     }
+    /* Was a cropped slice of the packaged "Pie de Página" art. Set as real
+       text instead so the promo dates can be edited without regenerating an
+       asset -- colours and weights sampled from that original. */
     .footer-text {
-      display: block; width: min(100%, 620px); height: auto; margin: 0 auto;
+      width: min(100%, 620px);
+      margin: 0 auto;
+    }
+    .footer-dates {
+      margin: 0 0 3px;
+      font-weight: 700;
+      font-size: clamp(13px, 3.4vw, 17px);
+      line-height: 1.25;
+      color: var(--footer-accent);
+    }
+    .footer-fineprint {
+      margin: 0;
+      font-weight: 500;
+      font-size: clamp(11px, 2.9vw, 14px);
+      line-height: 1.3;
+      color: #fff;
     }
     .marinela {
       position: absolute;
@@ -436,8 +455,10 @@
   <div class="marinela">
     <img src="{% theme_static 'img/logo_marinela.png' %}" alt="Marinela">
   </div>
-  <img class="footer-text" src="{% theme_static 'img/footer_text.png' %}"
-       alt="Promoción válida del 24 de agosto al 02 de octubre. La bicicleta mostrada es únicamente de carácter ilustrativo.">
+  <div class="footer-text">
+    <p class="footer-dates">Promoción válida del 1ro de Septiembre al 30 de Septiembre.</p>
+    <p class="footer-fineprint">La bicicleta mostrada es únicamente de carácter ilustrativo.</p>
+  </div>
 </footer>
 
 <script>
