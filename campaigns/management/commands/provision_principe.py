@@ -42,9 +42,11 @@ DISPLAY_TITLE = "Príncipe te pone en ruedas"
 PRIMARY = "#da291c"
 SIDEBAR = "#203978"
 
-# "Promoción válida del 24 de agosto al 02 de octubre." — footer of the artwork.
-START = timezone.make_aware(datetime(2026, 8, 24, 0, 0))
-END = timezone.make_aware(datetime(2026, 10, 2, 23, 59))
+# "Promoción válida del 1ro de Septiembre al 30 de Septiembre." — page footer.
+# The enforced window must match the advertised one: entries taken outside the
+# published period are a problem for a prize draw.
+START = timezone.make_aware(datetime(2026, 9, 1, 0, 0))
+END = timezone.make_aware(datetime(2026, 9, 30, 23, 59))
 
 PRIZE_NAME = "Bicicleta"
 PRIZE_QUANTITY = 30
@@ -87,6 +89,12 @@ class Command(BaseCommand):
             "--force-theme", action="store_true",
             help="Re-copy the theme into THEMES_ROOT even if it is already there.",
         )
+        parser.add_argument(
+            "--reset-dates", action="store_true",
+            help="Also move an existing campaign's start/end to the dates above. "
+                 "Off by default so a routine re-run cannot reopen or close a "
+                 "live campaign by surprise.",
+        )
 
     def handle(self, *args, **opts):
         domain, created = Domain.objects.get_or_create(
@@ -95,7 +103,7 @@ class Command(BaseCommand):
         self.stdout.write(f"  domain {'created' if created else 'exists'}: {domain.hostname}")
 
         theme = self._theme(force=opts["force_theme"])
-        campaign = self._campaign(domain, theme)
+        campaign = self._campaign(domain, theme, reset_dates=opts["reset_dates"])
         self._prize(campaign)
 
         self.stdout.write(self.style.SUCCESS(
@@ -117,7 +125,7 @@ class Command(BaseCommand):
         self.stdout.write(f"  theme {'created' if created else 'updated'}: {theme.slug} -> {dest}")
         return theme
 
-    def _campaign(self, domain, theme):
+    def _campaign(self, domain, theme, reset_dates=False):
         campaign, created = Campaign.objects.get_or_create(
             domain=domain, slug=CAMPAIGN_SLUG,
             defaults={
@@ -136,7 +144,11 @@ class Command(BaseCommand):
             },
         )
         if not created:
-            # Keep the config fields in sync without disturbing dates/active state.
+            # Keep the config fields in sync without disturbing dates/active state,
+            # unless the operator explicitly asked for the dates too.
+            if reset_dates:
+                campaign.start_date = START
+                campaign.end_date = END
             campaign.name = CAMPAIGN_NAME
             campaign.display_title = DISPLAY_TITLE
             campaign.primary_color = PRIMARY
@@ -144,7 +156,10 @@ class Command(BaseCommand):
             campaign.theme = theme
             campaign.form_schema = FORM_SCHEMA
             campaign.save()
-        self.stdout.write(f"  campaign {'created' if created else 'updated'}: {campaign.slug}")
+        self.stdout.write(
+            f"  campaign {'created' if created else 'updated'}: {campaign.slug} "
+            f"({campaign.start_date:%Y-%m-%d} to {campaign.end_date:%Y-%m-%d})"
+        )
         return campaign
 
     def _prize(self, campaign):

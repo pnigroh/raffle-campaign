@@ -55,6 +55,23 @@ class _IsolatedRootsMixin:
         super().tearDownClass()
 
 
+def _open_the_window(campaign):
+    """Widen a campaign's window around now.
+
+    The real window is 1-30 September; tests that exercise rendering and
+    submission care about form behaviour, not scheduling, and must not start
+    failing the moment the suite runs outside those dates. Scheduling itself
+    is covered by the ProvisionPrincipeTests.
+    """
+    from datetime import timedelta
+    from django.utils import timezone as tz
+    now = tz.now()
+    Campaign.objects.filter(pk=campaign.pk).update(
+        start_date=now - timedelta(days=1), end_date=now + timedelta(days=30))
+    campaign.refresh_from_db()
+    return campaign
+
+
 class PrincipeSchemaTests(TestCase):
     def test_schema_is_valid(self):
         self.assertEqual(validate_form_schema(FORM_SCHEMA), [])
@@ -100,12 +117,38 @@ class ProvisionPrincipeTests(_IsolatedRootsMixin, TestCase):
         self.assertFalse(campaign.validate_submission_code)
         self.assertTrue(campaign.allow_multiple_submissions)
 
-    def test_campaign_runs_for_the_dates_printed_on_the_art(self):
+    def test_campaign_runs_for_the_window_shown_in_the_footer(self):
         self._run()
         c = Campaign.objects.get(slug="principe-ruedas-cr")
-        self.assertEqual((c.start_date.month, c.start_date.day), (8, 24))
-        self.assertEqual((c.end_date.month, c.end_date.day), (10, 2))
+        self.assertEqual((c.start_date.month, c.start_date.day), (9, 1))
+        self.assertEqual((c.end_date.month, c.end_date.day), (9, 30))
         self.assertEqual(c.start_date.year, 2026)
+
+    def test_rerun_leaves_an_existing_campaign_window_alone(self):
+        """A routine re-run must not reopen or close a live campaign."""
+        from datetime import datetime
+        from django.utils import timezone as tz
+        self._run()
+        moved_start = tz.make_aware(datetime(2026, 5, 5, 0, 0))
+        moved_end = tz.make_aware(datetime(2026, 6, 6, 0, 0))
+        Campaign.objects.filter(slug="principe-ruedas-cr").update(
+            start_date=moved_start, end_date=moved_end)
+        self._run()
+        c = Campaign.objects.get(slug="principe-ruedas-cr")
+        self.assertEqual(c.start_date, moved_start)
+        self.assertEqual(c.end_date, moved_end)
+
+    def test_reset_dates_moves_an_existing_campaign_window(self):
+        from datetime import datetime
+        from django.utils import timezone as tz
+        self._run()
+        Campaign.objects.filter(slug="principe-ruedas-cr").update(
+            start_date=tz.make_aware(datetime(2026, 5, 5, 0, 0)),
+            end_date=tz.make_aware(datetime(2026, 6, 6, 0, 0)))
+        self._run(reset_dates=True)
+        c = Campaign.objects.get(slug="principe-ruedas-cr")
+        self.assertEqual((c.start_date.month, c.start_date.day), (9, 1))
+        self.assertEqual((c.end_date.month, c.end_date.day), (9, 30))
 
     def test_branding_uses_the_packaged_pantones(self):
         self._run()
@@ -141,7 +184,8 @@ class ProvisionPrincipeTests(_IsolatedRootsMixin, TestCase):
 class PrincipeFormRenderTests(_IsolatedRootsMixin, TestCase):
     def setUp(self):
         call_command("provision_principe", domain=TEST_HOST, verbosity=0)
-        self.campaign = Campaign.objects.get(slug="principe-ruedas-cr")
+        self.campaign = _open_the_window(
+            Campaign.objects.get(slug="principe-ruedas-cr"))
         self.client = Client(HTTP_HOST=TEST_HOST)
         self.url = f"/submit/{self.campaign.slug}/"
 
@@ -220,7 +264,8 @@ class RootRedirectTests(_IsolatedRootsMixin, TestCase):
 class PrincipeSubmissionTests(_IsolatedRootsMixin, TestCase):
     def setUp(self):
         call_command("provision_principe", domain=TEST_HOST, verbosity=0)
-        self.campaign = Campaign.objects.get(slug="principe-ruedas-cr")
+        self.campaign = _open_the_window(
+            Campaign.objects.get(slug="principe-ruedas-cr"))
         self.client = Client(HTTP_HOST=TEST_HOST)
         self.url = f"/submit/{self.campaign.slug}/"
 
@@ -270,3 +315,32 @@ class PrincipeSubmissionTests(_IsolatedRootsMixin, TestCase):
             ["first_name", "last_name", "cedula", "phone", "email",
              "purchase_place", "image_1", "consent"],
         )
+
+
+class PrincipeClosedWindowTests(_IsolatedRootsMixin, TestCase):
+    """Before 1 September the form must refuse entries, not quietly take them."""
+
+    def setUp(self):
+        call_command("provision_principe", domain=TEST_HOST, verbosity=0)
+        self.campaign = Campaign.objects.get(slug="principe-ruedas-cr")
+        self.client = Client(HTTP_HOST=TEST_HOST)
+        self.url = f"/submit/{self.campaign.slug}/"
+        from datetime import timedelta
+        from django.utils import timezone as tz
+        now = tz.now()
+        Campaign.objects.filter(pk=self.campaign.pk).update(
+            start_date=now + timedelta(days=3), end_date=now + timedelta(days=33))
+
+    def test_shows_the_closed_notice_instead_of_the_form(self):
+        html = self.client.get(self.url).content.decode()
+        self.assertIn("no está recibiendo participaciones", html)
+        self.assertNotIn('id="entryForm"', html)
+
+    def test_post_before_the_window_stores_nothing(self):
+        resp = self.client.post(self.url, {
+            "first_name": "Ana", "last_name": "R", "cedula": "1",
+            "phone": "8", "email": "a@example.com",
+            "purchase_place": "X", "consent": "on",
+        })
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(Submission.objects.filter(campaign=self.campaign).count(), 0)

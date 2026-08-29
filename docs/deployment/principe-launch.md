@@ -71,7 +71,7 @@ without it the stack refuses to start.
 `provision_principe` is idempotent — safe to re-run. It creates the `Domain`, the
 `Theme` row, copies `campaigns/themes/principe/` into `/app/themes/principe`
 (bind-mounted from `/srv/raffle/themes`), creates the campaign with its 8-field
-schema and dates, and seeds the 30-bicycle prize.
+schema and its 1-30 September window, and seeds the 30-bicycle prize.
 
 Pass `--force-theme` to re-copy the theme after a design change; without it an
 existing theme directory is left alone.
@@ -104,9 +104,11 @@ short links.
   `Submission.extra_data` and included in the CSV export. If the client later
   supplies a store list, switch that entry in `FORM_SCHEMA` to the `store`
   builtin and add `Store` rows — no template change is needed.
-- **Campaign window** is 2026-08-24 → 2026-10-02 23:59. Outside it the form
-  renders a closed notice and rejects POSTs. Re-running the command does not
-  reset the dates.
+- **Campaign window** is 2026-09-01 → 2026-09-30 23:59, matching the dates in
+  the page footer. Outside it the form renders a closed notice and rejects
+  POSTs. A plain re-run deliberately does *not* touch the dates, so it cannot
+  reopen or close a live campaign by surprise; pass `--reset-dates` to move an
+  existing campaign's window to the values in the command.
 
 ## Capacity
 
