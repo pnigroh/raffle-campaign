@@ -192,6 +192,81 @@ class RaffleRevealViewTests(_IsolatedThemeMixin, TestCase):
         self.assertIn("prefers-reduced-motion", body)
 
 
+class RaffleRevealPerCityTests(TestCase):
+    """Honduras-style campaign: raffles aggregate a city's stores (Store.group)
+    and carry NO filter_store_id. The reveal must group into per-city acts,
+    not collapse everything into a single 'Tienda #None' act."""
+
+    @classmethod
+    def _build(cls):
+        Theme.objects.get_or_create(slug="futboleros", defaults={"name": "Futboleros"})
+        now = timezone.now()
+        campaign = Campaign.objects.create(
+            name="Futboleros HN", slug="futboleros-bn-hn",
+            theme=Theme.objects.get(slug="futboleros"), domain=_domain(),
+            start_date=now - timedelta(days=1), end_date=now + timedelta(days=30),
+        )
+        cities = {
+            "Tegucigalpa": ["Bodega San Juan", "El Centavo"],
+            "San Pedro Sula": ["Bodega M Y M", "Surtidora La Fe"],
+        }
+        stores, order = {}, 0
+        for city, names in cities.items():
+            for name in names:
+                order += 1
+                s = Store.objects.create(name=name, group=city, order=order)
+                s.campaigns.add(campaign)
+                stores[name] = s
+        for si, (name, s) in enumerate(stores.items(), start=1):
+            for i in range(5):
+                Submission.objects.create(
+                    campaign=campaign, first_name=f"P{si}_{i}", last_name="T",
+                    email=f"p{si}_{i}@e.com", phone=f"90{si}{i}",
+                    store=s, is_valid=True,
+                )
+        primary = Prize.objects.create(campaign=campaign, name="Motocicleta Modelo 2026", order=0)
+        suplente = Prize.objects.create(campaign=campaign, name="Motocicleta Modelo 2026 — Suplente", order=1)
+        raffles = {}
+        for city in cities:
+            base = campaign.submissions.filter(is_valid=True, store__group=city)
+            rp = conduct_raffle(campaign, [(primary, 2)], base,
+                                segment_data={"notes": f"{city} — Titulares"}, consume_pool=False)
+            primary_ids = [w.submission_id for w in rp.winners.all()]
+            sub_pool = base.exclude(id__in=primary_ids)
+            rs = conduct_raffle(campaign, [(suplente, 2)], sub_pool,
+                                segment_data={"notes": f"{city} — Suplentes"}, consume_pool=False)
+            raffles[city] = (rp, rs)
+        return campaign, stores, raffles
+
+    def setUp(self):
+        self.campaign, self.stores, self.raffles = self._build()
+
+    def _acts(self):
+        from campaigns.views import _reveal_acts
+        return _reveal_acts(self.campaign)
+
+    def test_groups_into_two_city_acts_labeled_by_city(self):
+        acts = self._acts()
+        self.assertEqual([a["store_name"] for a in acts],
+                         ["Tegucigalpa", "San Pedro Sula"])
+
+    def test_each_city_act_shows_its_two_primary_winners(self):
+        act = self._acts()[0]  # Tegucigalpa
+        self.assertEqual([w["position"] for w in act["winners"]], [1, 2])
+        self.assertEqual(act["participants"],
+                         self.raffles["Tegucigalpa"][0].total_participants)
+        self.assertEqual(len(act["raffle_ids"]), 1)
+        self.assertTrue(act["sample_names"])
+
+    def test_substitutes_omitted_from_city_acts(self):
+        act_by_city = {a["store_name"]: a for a in self._acts()}
+        for city, (_rp, rs) in self.raffles.items():
+            names = {w["name"] for w in act_by_city[city]["winners"]}
+            for w in rs.winners.select_related("submission"):
+                self.assertNotIn(w.submission.full_name, names,
+                                 f"substitute {w.submission.full_name} leaked into {city} act")
+
+
 class RevealEntryButtonTests(TestCase):
     def setUp(self):
         self.campaign, self.stores, self.raffles = _RevealFixture.build()
