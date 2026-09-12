@@ -12,6 +12,7 @@ from pathlib import Path
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.test import Client, TestCase, override_settings
 
 from campaigns.dynamic_forms import build_form_class
@@ -149,6 +150,42 @@ class ProvisionPrincipeTests(_IsolatedRootsMixin, TestCase):
         c = Campaign.objects.get(slug="principe-ruedas-cr")
         self.assertEqual((c.start_date.month, c.start_date.day), (9, 14))
         self.assertEqual((c.end_date.month, c.end_date.day), (10, 23))
+
+    def test_default_domain_is_the_canonical_hostname(self):
+        """promoprincipe.com replaced bimbotepremia.com as the campaign's host."""
+        from campaigns.management.commands.provision_principe import DOMAIN
+        self.assertEqual(DOMAIN, "promoprincipe.com")
+
+    def test_moving_domains_moves_the_campaign_instead_of_cloning_it(self):
+        """The entries hang off the campaign row, so a hostname change has to
+        carry that row across -- a second row would split the draw."""
+        self._run()
+        campaign = Campaign.objects.get(slug="principe-ruedas-cr")
+        Submission.objects.create(
+            campaign=campaign, first_name="Ana", last_name="Rojas",
+            email="ana@example.com", phone="88887777",
+        )
+
+        with self.settings(ALLOWED_HOSTS=list(settings.ALLOWED_HOSTS) + ["moved.test"]):
+            call_command("provision_principe", domain="moved.test", verbosity=0)
+
+        self.assertEqual(Campaign.objects.filter(slug="principe-ruedas-cr").count(), 1)
+        campaign.refresh_from_db()
+        self.assertEqual(campaign.domain.hostname, "moved.test")
+        self.assertEqual(campaign.submissions.count(), 1)
+
+    def test_refuses_to_guess_when_the_slug_is_already_duplicated(self):
+        """Two rows with this slug means someone already split it by hand; the
+        command must not pick one at random."""
+        self._run()
+        other = Domain.objects.create(hostname="other.test")
+        original = Campaign.objects.get(slug="principe-ruedas-cr")
+        Campaign.objects.create(
+            domain=other, slug="principe-ruedas-cr", name="dupe",
+            start_date=original.start_date, end_date=original.end_date,
+        )
+        with self.assertRaises(CommandError):
+            self._run()
 
     def test_branding_uses_the_packaged_pantones(self):
         self._run()

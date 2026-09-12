@@ -5,6 +5,12 @@ in-repo ``principe`` theme and copies it into THEMES_ROOT, applies the Spanish
 8-field form_schema from the artwork, and seeds the single prize (30 bicycles,
 the quantity stated on the promo art).
 
+The campaign is keyed on its slug alone rather than on (domain, slug), so
+re-running it after the domain changes *moves* the existing campaign instead of
+starting a second one beside it. That matters: the model allows one slug per
+domain, entries hang off the campaign row, and a promo split across two rows is
+not something anyone notices until the draw comes up short.
+
 The purchase location is a free-text field for now. Swapping it to a store
 dropdown later is a form_schema edit plus Store rows — no template change.
 
@@ -12,20 +18,24 @@ Safe to re-run: the campaign is keyed on (domain, slug), the theme on slug and
 the prize on (campaign, name).
 
     python manage.py provision_principe
-    python manage.py provision_principe --domain bimbotepremia.com
+    python manage.py provision_principe --domain promoprincipe.com
 """
 
 from datetime import datetime
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from campaigns.models import Campaign, Domain, Prize, Theme
 from campaigns.themes_setup import copy_repo_theme_to_themes_root
 
 
-DOMAIN = "bimbotepremia.com"
-DOMAIN_DISPLAY = "Bimbo Te Premia"
+# promoprincipe.com is the campaign's canonical hostname. bimbotepremia.com,
+# which it replaced, is redirected to it at the proxy so printed links keep
+# working; it is deliberately not a second Domain row, because the app matches
+# hostnames exactly and a campaign belongs to one domain.
+DOMAIN = "promoprincipe.com"
+DOMAIN_DISPLAY = "Promo Príncipe"
 
 THEME_SLUG = "principe"
 THEME_NAME = "Príncipe — Te pone en ruedas"
@@ -133,38 +143,52 @@ class Command(BaseCommand):
         return theme
 
     def _campaign(self, domain, theme, reset_dates=False):
-        campaign, created = Campaign.objects.get_or_create(
-            domain=domain, slug=CAMPAIGN_SLUG,
-            defaults={
-                "name": CAMPAIGN_NAME,
-                "description": CAMPAIGN_NAME,
-                "start_date": START,
-                "end_date": END,
-                "is_active": True,
-                "validate_submission_code": False,
-                "allow_multiple_submissions": True,
-                "display_title": DISPLAY_TITLE,
-                "primary_color": PRIMARY,
-                "sidebar_color": SIDEBAR,
-                "theme": theme,
-                "form_schema": FORM_SCHEMA,
-            },
+        # Keyed on the slug alone, not on (domain, slug). The unique constraint
+        # is per-domain, so get_or_create on the pair would happily create a
+        # second campaign the day the promo moves hostname, silently splitting
+        # the entries and the draw between two rows. Looking it up by slug means
+        # a domain change moves the campaign that already holds the entries.
+        existing = list(Campaign.objects.filter(slug=CAMPAIGN_SLUG))
+        if len(existing) > 1:
+            raise CommandError(
+                f"{len(existing)} campaigns already carry the slug {CAMPAIGN_SLUG} "
+                f"(on {', '.join(c.domain.hostname for c in existing)}). Merge them "
+                "by hand before re-running: this command cannot tell which one "
+                "holds the real entries."
+            )
+
+        created = not existing
+        campaign = existing[0] if existing else Campaign(
+            slug=CAMPAIGN_SLUG,
+            description=CAMPAIGN_NAME,
+            is_active=True,
+            validate_submission_code=False,
+            allow_multiple_submissions=True,
         )
-        if not created:
-            # Keep the config fields in sync without disturbing dates/active state,
-            # unless the operator explicitly asked for the dates too.
-            if reset_dates:
-                campaign.start_date = START
-                campaign.end_date = END
-            campaign.name = CAMPAIGN_NAME
-            campaign.display_title = DISPLAY_TITLE
-            campaign.primary_color = PRIMARY
-            campaign.sidebar_color = SIDEBAR
-            campaign.theme = theme
-            campaign.form_schema = FORM_SCHEMA
-            campaign.save()
+        moved_from = (
+            campaign.domain.hostname
+            if not created and campaign.domain_id != domain.pk
+            else None
+        )
+
+        # Dates are left alone on an existing campaign unless the operator asks
+        # for them: a routine re-run must not reopen or close a live promo.
+        if created or reset_dates:
+            campaign.start_date = START
+            campaign.end_date = END
+
+        campaign.domain = domain
+        campaign.name = CAMPAIGN_NAME
+        campaign.display_title = DISPLAY_TITLE
+        campaign.primary_color = PRIMARY
+        campaign.sidebar_color = SIDEBAR
+        campaign.theme = theme
+        campaign.form_schema = FORM_SCHEMA
+        campaign.save()
+
+        moved = f" (moved from {moved_from})" if moved_from else ""
         self.stdout.write(
-            f"  campaign {'created' if created else 'updated'}: {campaign.slug} "
+            f"  campaign {'created' if created else 'updated'}: {campaign.slug}{moved} "
             f"({campaign.start_date:%Y-%m-%d} to {campaign.end_date:%Y-%m-%d})"
         )
         return campaign
