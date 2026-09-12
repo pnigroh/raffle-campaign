@@ -120,8 +120,8 @@ class ProvisionPrincipeTests(_IsolatedRootsMixin, TestCase):
     def test_campaign_runs_for_the_window_shown_in_the_footer(self):
         self._run()
         c = Campaign.objects.get(slug="principe-ruedas-cr")
-        self.assertEqual((c.start_date.month, c.start_date.day), (9, 1))
-        self.assertEqual((c.end_date.month, c.end_date.day), (9, 30))
+        self.assertEqual((c.start_date.month, c.start_date.day), (9, 14))
+        self.assertEqual((c.end_date.month, c.end_date.day), (10, 23))
         self.assertEqual(c.start_date.year, 2026)
 
     def test_rerun_leaves_an_existing_campaign_window_alone(self):
@@ -147,8 +147,8 @@ class ProvisionPrincipeTests(_IsolatedRootsMixin, TestCase):
             end_date=tz.make_aware(datetime(2026, 6, 6, 0, 0)))
         self._run(reset_dates=True)
         c = Campaign.objects.get(slug="principe-ruedas-cr")
-        self.assertEqual((c.start_date.month, c.start_date.day), (9, 1))
-        self.assertEqual((c.end_date.month, c.end_date.day), (9, 30))
+        self.assertEqual((c.start_date.month, c.start_date.day), (9, 14))
+        self.assertEqual((c.end_date.month, c.end_date.day), (10, 23))
 
     def test_branding_uses_the_packaged_pantones(self):
         self._run()
@@ -205,10 +205,24 @@ class PrincipeFormRenderTests(_IsolatedRootsMixin, TestCase):
     def test_theme_assets_are_referenced(self):
         html = self.client.get(self.url).content.decode()
         for asset in ("bg_mobile_body.jpg", "bg_mobile_art.jpg", "bg_desktop.jpg",
-                      "logo_principe.png", "logo_bimbo.png", "logo_marinela.png",
-                      "btn_participar.png", "empaques.webp",
-                      "Mikado-Bold.otf"):
+                      "logo_principe.png", "logo_marinela.png",
+                      "btn_participar.png", "Mikado-Bold.otf"):
             self.assertIn(asset, html, f"{asset} not referenced")
+        # Dropped by the September comp: it carries neither the Bimbo mark nor
+        # the pack shots.
+        for gone in ("logo_bimbo.png", "empaques.webp"):
+            self.assertNotIn(gone, html, f"{gone} should no longer be referenced")
+
+    def test_marinela_sits_in_the_header_lockup_not_the_footer(self):
+        """The September comp moved the Marinela mark off the footer tab and up
+        beside the PRÍNCIPE wordmark, and dropped the Bimbo mark entirely."""
+        for url in (self.url, f"{self.url}success/"):
+            html = self.client.get(url).content.decode()
+            self.assertIn('class="logo-marinela"', html, f"header lockup missing from {url}")
+            self.assertNotIn('class="marinela"', html, f"footer tab still in {url}")
+            # The lockup heads the page; it no longer hangs off the footer.
+            self.assertLess(html.index('class="logo-marinela"'),
+                            html.index("<footer"), url)
 
     def test_text_inputs_carry_no_placeholder(self):
         """The comp shows empty grey pills; the label already sits above."""
@@ -225,7 +239,7 @@ class PrincipeFormRenderTests(_IsolatedRootsMixin, TestCase):
         """The dates are set as HTML, not baked into art, so copy edits are cheap."""
         for url in (self.url, f"{self.url}success/"):
             html = self.client.get(url).content.decode()
-            self.assertIn("Promoción válida del 1ro de Septiembre al 30 de Septiembre.",
+            self.assertIn("Promoción válida del 14 de septiembre al 23 de octubre.",
                           html, f"promo window missing from {url}")
             self.assertIn("carácter ilustrativo", html)
             self.assertNotIn("footer_text.png", html)

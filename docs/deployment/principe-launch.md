@@ -71,10 +71,15 @@ without it the stack refuses to start.
 `provision_principe` is idempotent — safe to re-run. It creates the `Domain`, the
 `Theme` row, copies `campaigns/themes/principe/` into `/app/themes/principe`
 (bind-mounted from `/srv/raffle/themes`), creates the campaign with its 8-field
-schema and its 1-30 September window, and seeds the 30-bicycle prize.
+schema and its 14 September – 23 October window, and seeds the 30-bicycle prize.
 
 Pass `--force-theme` to re-copy the theme after a design change; without it an
 existing theme directory is left alone.
+
+A re-run deliberately leaves an existing campaign's dates alone, so it cannot
+reopen or close a live promo by accident. Moving the window on a campaign that
+already exists takes `--reset-dates`, and that is the only thing that will apply
+the 14 September – 23 October window to the live row.
 
 ## 4. Verify
 

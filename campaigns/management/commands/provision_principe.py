@@ -42,11 +42,18 @@ DISPLAY_TITLE = "Príncipe te pone en ruedas"
 PRIMARY = "#da291c"
 SIDEBAR = "#203978"
 
-# "Promoción válida del 1ro de Septiembre al 30 de Septiembre." — page footer.
+# "Promoción válida del 14 de septiembre al 23 de octubre." — page footer.
 # The enforced window must match the advertised one: entries taken outside the
 # published period are a problem for a prize draw.
-START = timezone.make_aware(datetime(2026, 9, 1, 0, 0))
-END = timezone.make_aware(datetime(2026, 9, 30, 23, 59))
+#
+# The September artwork moved the window off the 1-30 September one it replaced,
+# and the start moved forward rather than back. Applying it to the live campaign
+# with --reset-dates therefore closes the form until the 14th, and leaves the
+# entries taken from 1 September before the enforced start. Those rows stay in
+# the database and stay draw-eligible; they simply predate the promo as it is
+# now advertised. That is the deliberate choice: the printed dates win.
+START = timezone.make_aware(datetime(2026, 9, 14, 0, 0))
+END = timezone.make_aware(datetime(2026, 10, 23, 23, 59))
 
 PRIZE_NAME = "Bicicleta"
 PRIZE_QUANTITY = 30

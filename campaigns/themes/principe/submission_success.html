@@ -42,19 +42,21 @@
       background: var(--blue) url("{% theme_static 'img/bg_mobile_body.jpg' %}") center top / 100% 100% no-repeat;
       padding: 18px 0 0;
     }
+    /* The comp's card sits on 9.55% side margins, so the gutter is set from the
+       viewport rather than fixed: 9.55vw tracks that proportion up to the
+       560px the shell caps at, and the floor keeps a narrow phone readable. */
     .shell {
       max-width: 560px;
       margin: 0 auto;
-      padding: 0 20px;
+      padding: 0 clamp(20px, 9.55vw, 54px);
     }
 
-    .logo-bimbo { display: block; width: 108px; height: auto; margin-left: auto; }
-    .logo-principe {
-      display: block;
-      width: min(100%, 380px);
-      height: auto;
-      margin: 10px auto 22px;
-    }
+    /* Header lockup -- same construction as the form page: the Marinela mark
+       hangs off the top-left of the PRINCIPE wordmark, both sized as fractions
+       of a shared stack so the proportions hold at every width. */
+    .logo-stack { width: 94.2%; margin: 0 auto 22px; }
+    .logo-marinela { display: block; width: 28.6%; height: auto; margin-left: 14.5%; }
+    .logo-principe { display: block; width: 100%; height: auto; margin-top: -3%; }
 
     .card {
       background: #fff;
@@ -93,25 +95,22 @@
     }
     .again:hover { background: #17295c; }
 
-    /* Bottom art band -- same two-piece background split as the form page. */
+    /* Bottom art band -- same two-piece background split as the form page: a
+       sibling of `.page-body` rather than a child, so the stretched pattern
+       half ends exactly where the band begins and the two meet without a
+       brightness step. It carries its own headroom above the bike and stops
+       where the footer begins, so it needs no margins of its own. */
     .art {
-      position: relative;
-      margin: 8px 0 0;
-      background: url("{% theme_static 'img/bg_mobile_art.jpg' %}") center top / 100% 100% no-repeat;
-      aspect-ratio: 1000 / 880;
-    }
-    .empaques {
-      position: absolute; right: 4%; top: 16%; width: 46%; height: auto;
+      margin: 0;
+      background: var(--blue) url("{% theme_static 'img/bg_mobile_art.jpg' %}")
+                  center top / 100% 100% no-repeat;
+      aspect-ratio: 1000 / 587;
     }
 
-    /* The Marinela panel is a tab stuck to the top edge of the navy bar at
-       the right, as in the comp -- `bottom: 100%` parks its base on the
-       bar's top edge at every width. */
+    /* Footer: a plain navy bar with the promo window centred in it. */
     .page-footer {
-      position: relative;
-      z-index: 2;
       background: var(--navy);
-      padding: 16px 20px;
+      padding: 14px 20px;
     }
     /* Was a cropped slice of the packaged "Pie de Página" art. Set as real
        text instead so the promo dates can be edited without regenerating an
@@ -119,6 +118,7 @@
     .footer-text {
       width: min(100%, 620px);
       margin: 0 auto;
+      text-align: center;
     }
     .footer-dates {
       margin: 0 0 3px;
@@ -134,34 +134,6 @@
       line-height: 1.3;
       color: #fff;
     }
-    .marinela {
-      position: absolute;
-      right: 6%;
-      bottom: 100%;
-      width: 34%;
-      min-width: 150px;
-      max-width: 300px;
-      background: var(--navy);
-      /* Domed top, as in the comp, where the arch rises 10.6% of the panel's
-         width. The vertical radius resolves against height, which the logo's
-         margins hold at ~67% of the width, so 16% of height lands on that
-         same 10.6%. */
-      border-radius: 50% 50% 0 0 / 16% 16% 0 0;
-      /* Flex, so the logo's margins size the panel instead of collapsing out
-         of it. Padding is deliberately not used: percentage padding resolves
-         against the containing block -- the full-width footer -- not against
-         this panel. Margins on the child resolve against the parent, which
-         is the box we actually want to measure against. */
-      display: flex;
-    }
-    .marinela img {
-      display: block;
-      width: 78%;
-      height: auto;
-      /* Comp proportions, as fractions of the panel's own width. */
-      margin: 18% 11% 12%;
-    }
-
     /* ==================================================================
        Motion.
 
@@ -332,62 +304,28 @@
         padding: 32px 48px;
         display: grid;
         grid-template-columns: 1fr 1fr;
-        grid-template-rows: auto auto 1fr;
+        grid-template-rows: auto 1fr;
         grid-template-areas:
-          ".  bimbo"
-          ".  principe"
+          ".  logos"
           ".  card";
         column-gap: 40px;
         align-items: start;
       }
-      .logo-bimbo { grid-area: bimbo; width: 132px; justify-self: end; }
-      .logo-principe {
-        grid-area: principe;
-        width: min(100%, 400px);
-        margin: 18px auto 0;
+      .logo-stack {
+        grid-area: logos;
+        width: min(100%, 430px);
+        margin: 0 auto;
       }
       .card {
         grid-area: card;
         justify-self: end;
         width: 100%;
         max-width: 470px;
-        /* Clears the Marinela tab, which rises out of the navy bar below. */
-        margin: 24px 0 150px;
+        margin: 24px 0 40px;
       }
 
-      /* The bike band is dropped -- the desktop background carries it. The
-         band is only collapsed out of the flex flow rather than hidden,
-         because the packs live inside it. */
-      .art {
-        position: absolute;
-        width: 0;
-        height: 0;
-        margin: 0;
-        background: none;
-        aspect-ratio: auto;
-      }
-
-      /* The desktop background is `fixed`, so the packs are pinned too:
-         anything else slides them over the "GANA 1 DE LAS 30" lockup as the
-         page scrolls.
-
-         The sizing is geometry, not taste. That lockup ends at y 79% of the
-         background; with `cover` its lowest possible landing point is 79% of
-         the viewport height, so 21vh is the least headroom there can ever be
-         below it. The packs are 1000x505, so 34vh wide makes them 17.2vh
-         tall -- that plus the 1.5vh gap always clears the lockup, at any
-         window size. */
-      .empaques {
-        position: fixed;
-        z-index: 0;
-        left: 4%;
-        right: auto;
-        top: auto;
-        bottom: 1.5vh;
-        width: min(34vh, 430px);
-      }
-
-      .marinela { width: 17%; max-width: 205px; }
+      /* The bike band is dropped -- the desktop background carries it. */
+      .art { display: none; }
     }
 
     /* ==================================================================
@@ -430,9 +368,11 @@
 <div class="page-body">
   <div class="shell">
 
-    <img class="logo-bimbo reveal" src="{% theme_static 'img/logo_bimbo.png' %}" alt="Bimbo">
-    <img class="logo-principe reveal" src="{% theme_static 'img/logo_principe.png' %}"
-         alt="Príncipe te pone en ruedas">
+    <div class="logo-stack reveal">
+      <img class="logo-marinela" src="{% theme_static 'img/logo_marinela.png' %}" alt="Marinela">
+      <img class="logo-principe" src="{% theme_static 'img/logo_principe.png' %}"
+           alt="Príncipe te pone en ruedas">
+    </div>
 
     <div class="card reveal">
       <h1>¡Gracias por participar!</h1>
@@ -444,19 +384,13 @@
     </div>
 
   </div>
-
-  <div class="art">
-    <img class="empaques" src="{% theme_static 'img/empaques.webp' %}"
-         alt="Galletas Príncipe" width="1000" height="505">
-  </div>
 </div>
 
+<div class="art"></div>
+
 <footer class="page-footer">
-  <div class="marinela">
-    <img src="{% theme_static 'img/logo_marinela.png' %}" alt="Marinela">
-  </div>
   <div class="footer-text">
-    <p class="footer-dates">Promoción válida del 1ro de Septiembre al 30 de Septiembre.</p>
+    <p class="footer-dates">Promoción válida del 14 de septiembre al 23 de octubre.</p>
     <p class="footer-fineprint">La bicicleta mostrada es únicamente de carácter ilustrativo.</p>
   </div>
 </footer>
