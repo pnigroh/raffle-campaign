@@ -19,8 +19,10 @@ promoprincipe.com.      A   159.223.186.130
 www.promoprincipe.com.  A   159.223.186.130
 ```
 
-Leave them **DNS-only (grey cloud)** in Cloudflare until the certificate is
-issued — see step 2.
+As set up on 2026-09-12 these resolve straight to the droplet, not to a
+Cloudflare edge IP, so HTTP-01 validation works as-is. If the records are ever
+put behind the Cloudflare proxy, set them back to **DNS-only (grey cloud)**
+before renewing — see step 2.
 
 ## 1. `.env.prod`
 
