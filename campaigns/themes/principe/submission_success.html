@@ -82,6 +82,21 @@
     .card p:last-child { margin-bottom: 0; }
     .card .fineprint { font-size: 15px; color: #555; }
 
+    /* Keep-buying nudge. The thanks is already the headline, so this sits in
+       a tinted strip to read as a message from the brand rather than as more
+       body copy, and to hand the visitor on to the "participar de nuevo"
+       button below it. */
+    .card .keep-buying {
+      background: #eaf6fd;
+      border-radius: 18px;
+      padding: 14px 18px;
+      margin: 0 0 14px;
+      font-weight: 700;
+      font-size: 17px;
+      line-height: 1.4;
+      color: var(--navy);
+    }
+
     .again {
       display: inline-block;
       margin-top: 22px;
@@ -378,6 +393,8 @@
       <h1>¡Gracias por participar!</h1>
       <p>Tu participación quedó registrada. Ya estás dentro del sorteo por
          <strong>1 de las 30 bicicletas</strong>.</p>
+      <p class="keep-buying">Gracias por participar. Sigue comprando Príncipe
+         para más opciones de ganar.</p>
       <p class="fineprint">Guardá tu factura original: te la vamos a pedir si resultás
          ganador. Si tenés más facturas, podés participar de nuevo.</p>
       <a class="again" href="{% url 'submission_form' campaign_slug=campaign.slug %}">Participar de nuevo</a>

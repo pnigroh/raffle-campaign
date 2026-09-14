@@ -272,6 +272,15 @@ class PrincipeFormRenderTests(_IsolatedRootsMixin, TestCase):
         self.assertIn("¡Gracias por participar!", html)
         self.assertIn("30 bicicletas", html)
 
+    def test_success_page_nudges_the_visitor_to_keep_buying(self):
+        """The confirmation carries the campaign's ask, not just the thanks."""
+        html = self.client.get(f"{self.url}success/").content.decode()
+        self.assertIn('class="keep-buying"', html)
+        # Set across two source lines, so match on the halves rather than the
+        # whole sentence.
+        self.assertIn("Sigue comprando Príncipe", html)
+        self.assertIn("más opciones de ganar", html)
+
     def test_footer_states_the_promo_window_as_text(self):
         """The dates are set as HTML, not baked into art, so copy edits are cheap."""
         for url in (self.url, f"{self.url}success/"):
